@@ -29,6 +29,10 @@ export async function requireAuth(req, res, next) {
       standId: admin.standId || null,
       standName: admin.standName || null,
       empresaNome: admin.empresaNome || null,
+      empresaVinculadaId: admin.empresaVinculadaId || null,
+      empresaVinculadaNome: admin.empresaVinculadaNome || admin.empresaNome || null,
+      comissaoResponsavelId: admin.comissaoResponsavelId || null,
+      comissaoResponsavelNome: admin.comissaoResponsavel?.nome || null,
       permissoesCustomizadas:
         admin.permissoesCustomizadas ||
         ((admin.role === AdminRole.OPERADOR_QR ||

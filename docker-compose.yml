@@ -34,6 +34,8 @@ services:
       GATE_PASSWORD: Gate@123
       LEITOR_EMAIL: leitor@evento.com
       LEITOR_PASSWORD: Leitor@123
+      COMISSAO_EMAIL: comissao@evento.com
+      COMISSAO_PASSWORD: Comissao@123
       GATE_START_HOUR: 0
       GATE_END_HOUR: 23
     depends_on:

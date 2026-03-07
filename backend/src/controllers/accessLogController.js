@@ -2,6 +2,14 @@ import {
   findAccessAttemptById,
   listAccessAttempts
 } from "../repositories/accessAttemptRepository.js";
+import { AdminRole } from "../domain/enums.js";
+
+function resolveScope(auth) {
+  if (auth?.role === AdminRole.COMISSAO_ORGANIZADORA) {
+    return { comissaoResponsavelId: auth.id };
+  }
+  return undefined;
+}
 
 export async function listAccessLogsAdminHandler(req, res) {
   const page = Math.max(Number(req.query.page || 1), 1);
@@ -13,11 +21,16 @@ export async function listAccessLogsAdminHandler(req, res) {
     resultado: typeof req.query.resultado === "string" ? req.query.resultado : undefined,
     categoria: typeof req.query.categoria === "string" ? req.query.categoria : undefined,
     operatorId: typeof req.query.operatorId === "string" ? req.query.operatorId : undefined,
+    comissaoResponsavelId:
+      typeof req.query.comissaoResponsavelId === "string" ? req.query.comissaoResponsavelId : undefined,
     standId: typeof req.query.standId === "string" ? req.query.standId : undefined,
+    empresaVinculadaId:
+      typeof req.query.empresaVinculadaId === "string" ? req.query.empresaVinculadaId : undefined,
     empresaNome: typeof req.query.empresaNome === "string" ? req.query.empresaNome : undefined,
     credenciadoId: typeof req.query.credenciadoId === "string" ? req.query.credenciadoId : undefined,
     dateFrom: typeof req.query.dateFrom === "string" ? req.query.dateFrom : undefined,
-    dateTo: typeof req.query.dateTo === "string" ? req.query.dateTo : undefined
+    dateTo: typeof req.query.dateTo === "string" ? req.query.dateTo : undefined,
+    scope: resolveScope(req.auth)
   });
 
   return res.json({
@@ -34,6 +47,10 @@ export async function listAccessLogsAdminHandler(req, res) {
       standId: item.standId,
       standName: item.standName,
       empresaNome: item.empresaNome,
+      empresaVinculadaId: item.empresaVinculadaId,
+      empresaVinculadaNome: item.empresaVinculadaNome,
+      comissaoResponsavelId: item.comissaoResponsavelId,
+      comissaoResponsavelNome: item.comissaoResponsavelNome,
       deviceId: item.deviceId,
       deviceInfo: item.deviceInfo,
       accessPoint: item.accessPoint,
@@ -56,7 +73,7 @@ export async function listAccessLogsAdminHandler(req, res) {
 }
 
 export async function getAccessLogByIdAdminHandler(req, res) {
-  const item = await findAccessAttemptById(req.params.id);
+  const item = await findAccessAttemptById(req.params.id, resolveScope(req.auth));
   if (!item) {
     return res.status(404).json({ error: "log de acesso nao encontrado" });
   }
@@ -74,6 +91,10 @@ export async function getAccessLogByIdAdminHandler(req, res) {
     standId: item.standId,
     standName: item.standName,
     empresaNome: item.empresaNome,
+    empresaVinculadaId: item.empresaVinculadaId,
+    empresaVinculadaNome: item.empresaVinculadaNome,
+    comissaoResponsavelId: item.comissaoResponsavelId,
+    comissaoResponsavelNome: item.comissaoResponsavelNome,
     deviceId: item.deviceId,
     deviceInfo: item.deviceInfo,
     accessPoint: item.accessPoint,

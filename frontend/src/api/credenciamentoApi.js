@@ -294,3 +294,46 @@ export async function operatorHistoryBasic() {
   const response = await adminFetch("/operator/history-basic");
   return parseResponse(response);
 }
+
+export async function getCommissionOperators() {
+  const response = await adminFetch("/commission/operators");
+  return parseResponse(response);
+}
+
+export async function createCommissionOperator(payload) {
+  const response = await adminFetch("/commission/operators", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseResponse(response);
+}
+
+export async function updateCommissionOperator(id, payload) {
+  const response = await adminFetch(`/commission/operators/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseResponse(response);
+}
+
+export async function patchCommissionOperatorActive(id, ativo) {
+  const response = await adminFetch(`/commission/operators/${id}/active`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ativo })
+  });
+  return parseResponse(response);
+}
+
+export async function getCommissionAccessLogs(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      query.set(key, String(value));
+    }
+  });
+  const response = await adminFetch(`/commission/access-logs?${query.toString()}`);
+  return parseResponse(response);
+}

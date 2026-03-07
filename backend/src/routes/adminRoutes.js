@@ -121,17 +121,38 @@ adminRouter.get(
 );
 adminRouter.get(
   "/access-logs",
-  asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.ADMIN, AdminRole.SYSTEM])),
+  asyncHandler(
+    requireRoles([
+      AdminRole.MASTER_ADMIN,
+      AdminRole.ADMIN,
+      AdminRole.COMISSAO_ORGANIZADORA,
+      AdminRole.SYSTEM
+    ])
+  ),
   asyncHandler(listAccessLogsAdminHandler)
 );
 adminRouter.get(
   "/access-logs/:id",
-  asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.ADMIN, AdminRole.SYSTEM])),
+  asyncHandler(
+    requireRoles([
+      AdminRole.MASTER_ADMIN,
+      AdminRole.ADMIN,
+      AdminRole.COMISSAO_ORGANIZADORA,
+      AdminRole.SYSTEM
+    ])
+  ),
   asyncHandler(getAccessLogByIdAdminHandler)
 );
 adminRouter.get(
   "/reports/stand-visitors",
-  asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.ADMIN, AdminRole.SYSTEM])),
+  asyncHandler(
+    requireRoles([
+      AdminRole.MASTER_ADMIN,
+      AdminRole.ADMIN,
+      AdminRole.COMISSAO_ORGANIZADORA,
+      AdminRole.SYSTEM
+    ])
+  ),
   asyncHandler(standVisitorsReportHandler)
 );
 adminRouter.post(
@@ -166,27 +187,57 @@ adminRouter.get(
 
 adminRouter.get(
   "/users",
-  asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.SYSTEM])),
+  asyncHandler(
+    requireRoles([
+      AdminRole.MASTER_ADMIN,
+      AdminRole.COMISSAO_ORGANIZADORA,
+      AdminRole.SYSTEM
+    ])
+  ),
   asyncHandler(listInternalUsersHandler)
 );
 adminRouter.post(
   "/users",
-  asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.SYSTEM])),
+  asyncHandler(
+    requireRoles([
+      AdminRole.MASTER_ADMIN,
+      AdminRole.COMISSAO_ORGANIZADORA,
+      AdminRole.SYSTEM
+    ])
+  ),
   asyncHandler(createInternalUserHandler)
 );
 adminRouter.put(
   "/users/:id",
-  asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.SYSTEM])),
+  asyncHandler(
+    requireRoles([
+      AdminRole.MASTER_ADMIN,
+      AdminRole.COMISSAO_ORGANIZADORA,
+      AdminRole.SYSTEM
+    ])
+  ),
   asyncHandler(updateInternalUserHandler)
 );
 adminRouter.patch(
   "/users/:id/active",
-  asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.SYSTEM])),
+  asyncHandler(
+    requireRoles([
+      AdminRole.MASTER_ADMIN,
+      AdminRole.COMISSAO_ORGANIZADORA,
+      AdminRole.SYSTEM
+    ])
+  ),
   asyncHandler(updateInternalUserActiveHandler)
 );
 adminRouter.patch(
   "/users/:id/permissions",
-  asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.SYSTEM])),
+  asyncHandler(
+    requireRoles([
+      AdminRole.MASTER_ADMIN,
+      AdminRole.COMISSAO_ORGANIZADORA,
+      AdminRole.SYSTEM
+    ])
+  ),
   asyncHandler(updateInternalUserPermissionsHandler)
 );
 

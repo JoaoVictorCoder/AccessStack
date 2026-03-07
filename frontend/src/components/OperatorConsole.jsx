@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import jsQR from "jsqr";
 
 function getDeviceId() {
   const key = "operator_device_id";
@@ -41,6 +42,9 @@ export default function OperatorConsole({ operator, onValidate, history, loading
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const scanTimerRef = useRef(null);
+  const rafRef = useRef(null);
+  const detectorRef = useRef(null);
+  const canvasRef = useRef(null);
   const lastReadRef = useRef({ text: "", at: 0 });
   const validatingRef = useRef(false);
   const localDeviceId = useMemo(() => getDeviceId(), []);
@@ -51,6 +55,10 @@ export default function OperatorConsole({ operator, onValidate, history, loading
     if (scanTimerRef.current) {
       window.clearInterval(scanTimerRef.current);
       scanTimerRef.current = null;
+    }
+    if (rafRef.current) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -96,15 +104,23 @@ export default function OperatorConsole({ operator, onValidate, history, loading
       setCameraError("Seu perfil nao possui permissao para usar camera.");
       return;
     }
-    if (!("BarcodeDetector" in window)) {
-      setCameraError("Leitura por camera nao suportada neste navegador.");
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      setCameraError("Camera nao suportada neste navegador.");
       return;
     }
 
     try {
-      const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+      if ("BarcodeDetector" in window) {
+        detectorRef.current = new window.BarcodeDetector({ formats: ["qr_code"] });
+      } else {
+        detectorRef.current = null;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
         audio: false
       });
       streamRef.current = stream;
@@ -115,19 +131,53 @@ export default function OperatorConsole({ operator, onValidate, history, loading
       setCameraActive(true);
       setScanStatus("scanning");
 
-      scanTimerRef.current = window.setInterval(async () => {
+      const detectOnce = async () => {
+        if (!videoRef.current || validatingRef.current || videoRef.current.readyState < 2) {
+          rafRef.current = window.requestAnimationFrame(detectOnce);
+          return;
+        }
         if (!videoRef.current || validatingRef.current) return;
         try {
-          const results = await detector.detect(videoRef.current);
-          if (results?.length) {
-            await validateByCode(results[0].rawValue || "");
+          if (detectorRef.current) {
+            const results = await detectorRef.current.detect(videoRef.current);
+            if (results?.length) {
+              await validateByCode(results[0].rawValue || "");
+            }
+          } else {
+            const video = videoRef.current;
+            if (!canvasRef.current) {
+              canvasRef.current = document.createElement("canvas");
+            }
+            const canvas = canvasRef.current;
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            if (ctx) {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const qr = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "attemptBoth"
+              });
+              if (qr?.data) {
+                await validateByCode(qr.data);
+              }
+            }
           }
         } catch {
           // leitura continua
+        } finally {
+          rafRef.current = window.requestAnimationFrame(detectOnce);
         }
-      }, 450);
+      };
+      rafRef.current = window.requestAnimationFrame(detectOnce);
     } catch (error) {
-      setCameraError("Nao foi possivel acessar a camera. Verifique permissoes.");
+      if (error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError") {
+        setCameraError("Permissao de camera negada.");
+      } else if (error?.name === "NotFoundError" || error?.name === "DevicesNotFoundError") {
+        setCameraError("Nenhuma camera disponivel neste dispositivo.");
+      } else {
+        setCameraError("Nao foi possivel acessar a camera. Verifique permissoes.");
+      }
       stopCamera();
       console.error(error);
     }

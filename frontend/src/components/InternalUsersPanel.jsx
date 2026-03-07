@@ -19,11 +19,15 @@ function emptyForm() {
     role: "OPERADOR_QR",
     standId: "",
     standName: "",
-    empresaNome: ""
+    empresaNome: "",
+    empresaVinculadaId: "",
+    empresaVinculadaNome: "",
+    comissaoResponsavelId: ""
   };
 }
 
 export default function InternalUsersPanel({
+  managerRole,
   users,
   currentUserId,
   onCreate,
@@ -41,7 +45,10 @@ export default function InternalUsersPanel({
   const [draftUser, setDraftUser] = useState({
     standId: "",
     standName: "",
-    empresaNome: ""
+    empresaNome: "",
+    empresaVinculadaId: "",
+    empresaVinculadaNome: "",
+    comissaoResponsavelId: ""
   });
 
   const usersById = useMemo(
@@ -78,7 +85,10 @@ export default function InternalUsersPanel({
     setDraftUser({
       standId: user.standId || "",
       standName: user.standName || "",
-      empresaNome: user.empresaNome || ""
+      empresaNome: user.empresaNome || "",
+      empresaVinculadaId: user.empresaVinculadaId || "",
+      empresaVinculadaNome: user.empresaVinculadaNome || "",
+      comissaoResponsavelId: user.comissaoResponsavelId || ""
     });
     setError("");
     setMessage("");
@@ -95,7 +105,10 @@ export default function InternalUsersPanel({
       await onUpdateUser(user.id, {
         standId: draftUser.standId,
         standName: draftUser.standName,
-        empresaNome: draftUser.empresaNome
+        empresaNome: draftUser.empresaNome,
+        empresaVinculadaId: draftUser.empresaVinculadaId,
+        empresaVinculadaNome: draftUser.empresaVinculadaNome,
+        comissaoResponsavelId: draftUser.comissaoResponsavelId
       });
       setEditingUserId("");
       setMessage("Alteracoes salvas com sucesso.");
@@ -137,13 +150,18 @@ export default function InternalUsersPanel({
         </label>
         <label>
           Perfil
-          <select
-            value={form.role}
-            onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}
-          >
-            <option value="ADMIN">ADMIN</option>
-            <option value="OPERADOR_QR">OPERADOR_QR</option>
-          </select>
+          {managerRole === "COMISSAO_ORGANIZADORA" ? (
+            <input value="OPERADOR_QR" disabled />
+          ) : (
+            <select
+              value={form.role}
+              onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}
+            >
+              <option value="ADMIN">ADMIN</option>
+              <option value="COMISSAO_ORGANIZADORA">COMISSAO_ORGANIZADORA</option>
+              <option value="OPERADOR_QR">OPERADOR_QR</option>
+            </select>
+          )}
         </label>
         <label>
           Stand ID
@@ -162,10 +180,32 @@ export default function InternalUsersPanel({
         <label>
           Empresa
           <input
-            value={form.empresaNome}
-            onChange={(e) => setForm((prev) => ({ ...prev, empresaNome: e.target.value }))}
+            value={form.empresaVinculadaNome || form.empresaNome}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                empresaNome: e.target.value,
+                empresaVinculadaNome: e.target.value
+              }))
+            }
           />
         </label>
+        <label>
+          Empresa ID
+          <input
+            value={form.empresaVinculadaId}
+            onChange={(e) => setForm((prev) => ({ ...prev, empresaVinculadaId: e.target.value }))}
+          />
+        </label>
+        {managerRole !== "COMISSAO_ORGANIZADORA" && (
+          <label>
+            Comissao Responsavel (ID)
+            <input
+              value={form.comissaoResponsavelId}
+              onChange={(e) => setForm((prev) => ({ ...prev, comissaoResponsavelId: e.target.value }))}
+            />
+          </label>
+        )}
         <button type="submit" disabled={savingCreate}>
           {savingCreate ? "Criando..." : "Criar usuario"}
         </button>
@@ -197,7 +237,7 @@ export default function InternalUsersPanel({
                   <td>{user.email}</td>
                   <td>{user.role}</td>
                   <td>{isEditing ? <input value={draftUser.standName} onChange={(e) => setDraftUser((prev) => ({ ...prev, standName: e.target.value }))} /> : user.standName || "-"}</td>
-                  <td>{isEditing ? <input value={draftUser.empresaNome} onChange={(e) => setDraftUser((prev) => ({ ...prev, empresaNome: e.target.value }))} /> : user.empresaNome || "-"}</td>
+                  <td>{isEditing ? <input value={draftUser.empresaVinculadaNome || draftUser.empresaNome} onChange={(e) => setDraftUser((prev) => ({ ...prev, empresaNome: e.target.value, empresaVinculadaNome: e.target.value }))} /> : user.empresaVinculadaNome || user.empresaNome || "-"}</td>
                   <td>{user.ativo ? "Sim" : "Nao"}</td>
                   <td className="table-actions">
                     <button
@@ -284,6 +324,24 @@ export default function InternalUsersPanel({
               onChange={(e) => setDraftUser((prev) => ({ ...prev, standId: e.target.value }))}
             />
           </label>
+          <label>
+            Empresa ID
+            <input
+              value={draftUser.empresaVinculadaId}
+              onChange={(e) => setDraftUser((prev) => ({ ...prev, empresaVinculadaId: e.target.value }))}
+            />
+          </label>
+          {managerRole !== "COMISSAO_ORGANIZADORA" && (
+            <label>
+              Comissao Responsavel (ID)
+              <input
+                value={draftUser.comissaoResponsavelId}
+                onChange={(e) =>
+                  setDraftUser((prev) => ({ ...prev, comissaoResponsavelId: e.target.value }))
+                }
+              />
+            </label>
+          )}
         </section>
       )}
     </section>

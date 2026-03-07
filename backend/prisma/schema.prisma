@@ -43,6 +43,7 @@ enum TipoEventoSistema {
 enum AdminRole {
   MASTER_ADMIN
   ADMIN
+  COMISSAO_ORGANIZADORA
   OPERADOR_QR
   LEITOR_CATRACA
   APP_GATE
@@ -143,21 +144,32 @@ model EventoSistema {
 }
 
 model AdminUser {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique
-  passwordHash String
-  nome         String
-  role         AdminRole @default(ADMIN)
-  ativo        Boolean  @default(true)
-  standId      String?
-  standName    String?
-  empresaNome  String?
+  id                    String    @id @default(uuid()) @db.Uuid
+  email                 String    @unique
+  passwordHash          String
+  nome                  String
+  role                  AdminRole @default(ADMIN)
+  ativo                 Boolean   @default(true)
+  standId               String?
+  standName             String?
+  empresaNome           String?
+  empresaVinculadaId    String?
+  empresaVinculadaNome  String?
+  comissaoResponsavelId String?   @db.Uuid
   permissoesCustomizadas Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
-  auditLogs    AuditLog[]
+  comissaoResponsavel    AdminUser?    @relation("ComissaoOperatorScope", fields: [comissaoResponsavelId], references: [id], onDelete: SetNull)
+  operadoresGerenciados  AdminUser[]   @relation("ComissaoOperatorScope")
+  auditLogs              AuditLog[]
   operatedAccessAttempts AccessAttempt[] @relation("OperatorAccessAttempts")
+  comissaoAccessAttempts AccessAttempt[] @relation("ComissaoAccessAttempts")
+
+  @@index([role, ativo])
+  @@index([comissaoResponsavelId, role, ativo])
+  @@index([empresaVinculadaId])
+  @@index([standId])
 }
 
 model AuditLog {
@@ -199,6 +211,10 @@ model AccessAttempt {
   standId      String?
   standName    String?
   empresaNome  String?
+  empresaVinculadaId String?
+  empresaVinculadaNome String?
+  comissaoResponsavelId String? @db.Uuid
+  comissaoResponsavelNome String?
   deviceId     String?
   deviceInfo   Json?
   accessPoint  String?
@@ -210,11 +226,15 @@ model AccessAttempt {
   credencial Credencial? @relation(fields: [credencialId], references: [id], onDelete: SetNull)
   gateDevice GateDevice? @relation(fields: [gateDeviceId], references: [id], onDelete: SetNull)
   operator   AdminUser?  @relation("OperatorAccessAttempts", fields: [operatorId], references: [id], onDelete: SetNull)
+  comissaoResponsavel AdminUser? @relation("ComissaoAccessAttempts", fields: [comissaoResponsavelId], references: [id], onDelete: SetNull)
 
   @@index([credencialId, createdAt])
   @@index([resultado, motivo, createdAt])
   @@index([operatorId, createdAt])
   @@index([deviceId, createdAt])
+  @@index([standId, createdAt])
+  @@index([empresaVinculadaId, createdAt])
+  @@index([comissaoResponsavelId, createdAt])
 }
 
 model Evento {

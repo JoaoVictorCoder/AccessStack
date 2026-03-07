@@ -49,6 +49,7 @@ export default function AdminDashboard({
   const items = listResponse?.items || [];
   const page = listResponse?.page || 1;
   const totalPages = listResponse?.totalPages || 1;
+  const isComissao = admin?.role === "COMISSAO_ORGANIZADORA";
 
   return (
     <main className="single-page">
@@ -59,9 +60,11 @@ export default function AdminDashboard({
             <p>Logado como {admin?.nome || admin?.email}</p>
           </div>
           <div className="toolbar">
-            <button type="button" onClick={() => setShowComissaoForm(true)}>
-              Adicionar Comissao Organizadora
-            </button>
+            {!isComissao && (
+              <button type="button" onClick={() => setShowComissaoForm(true)}>
+                Adicionar Comissao Organizadora
+              </button>
+            )}
             <button type="button" onClick={onReload} disabled={loading}>
               {loading ? "Atualizando..." : "Atualizar"}
             </button>
@@ -71,7 +74,8 @@ export default function AdminDashboard({
           </div>
         </div>
 
-        <div className="filters">
+        {!isComissao && (
+          <div className="filters">
           <label>
             Secao
             <select
@@ -111,11 +115,18 @@ export default function AdminDashboard({
               ))}
             </select>
           </label>
-        </div>
+          </div>
+        )}
+
+        {isComissao && (
+          <p className="section-subtitle">
+            Escopo da comissao: gerencie operadores QR vinculados e consulte logs de acesso do seu escopo.
+          </p>
+        )}
 
         {error && <p className="error">{error}</p>}
 
-        {activeSection === "credenciados" && (
+        {!isComissao && activeSection === "credenciados" && (
           <>
             <AdminCredenciadosTable items={items} onOpenDetails={onOpenDetails} />
 
@@ -141,7 +152,7 @@ export default function AdminDashboard({
           </>
         )}
 
-        {activeSection === "eventos" && (
+        {!isComissao && activeSection === "eventos" && (
           <>
             <h3>Eventos recentes</h3>
             <ul className="event-list compact">
@@ -159,7 +170,7 @@ export default function AdminDashboard({
           </>
         )}
 
-        {activeSection === "audit" && (
+        {!isComissao && activeSection === "audit" && (
           <>
             <h3>Auditoria administrativa</h3>
             <ul className="event-list compact">
@@ -176,7 +187,7 @@ export default function AdminDashboard({
           </>
         )}
 
-        {activeSection === "checkin" && (
+        {!isComissao && activeSection === "checkin" && (
           <>
             <h3>Controle de Entrada (QR / Check-in)</h3>
             <form
@@ -230,7 +241,7 @@ export default function AdminDashboard({
           </>
         )}
 
-        {activeSection === "analytics" && (
+        {!isComissao && activeSection === "analytics" && (
           <>
             <h3>Analytics</h3>
             {analyticsOverview && (
@@ -300,7 +311,7 @@ export default function AdminDashboard({
         />
       )}
 
-      {showComissaoForm && (
+      {!isComissao && showComissaoForm && (
         <AdminComissaoForm
           loading={creatingComissao}
           error={createComissaoError}

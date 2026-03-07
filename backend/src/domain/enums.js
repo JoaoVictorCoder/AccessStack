@@ -34,6 +34,7 @@ export const TipoEventoSistema = Object.freeze({
 export const AdminRole = Object.freeze({
   MASTER_ADMIN: "MASTER_ADMIN",
   ADMIN: "ADMIN",
+  COMISSAO_ORGANIZADORA: "COMISSAO_ORGANIZADORA",
   OPERADOR_QR: "OPERADOR_QR",
   LEITOR_CATRACA: "LEITOR_CATRACA",
   APP_GATE: "APP_GATE",
@@ -43,6 +44,7 @@ export const AdminRole = Object.freeze({
 export const OrganizationProfile = Object.freeze({
   MASTER_ADMIN: "MasterAdmin",
   ADMIN: "Admin",
+  COMISSAO_ORGANIZADORA: "ComissaoOrganizadora",
   OPERADOR_QR: "OperadorQr",
   SYSTEM: "System"
 });
@@ -53,6 +55,9 @@ export function mapRoleToOrganizationProfile(role) {
   }
   if (role === AdminRole.ADMIN) {
     return OrganizationProfile.ADMIN;
+  }
+  if (role === AdminRole.COMISSAO_ORGANIZADORA) {
+    return OrganizationProfile.COMISSAO_ORGANIZADORA;
   }
   if (
     role === AdminRole.OPERADOR_QR ||

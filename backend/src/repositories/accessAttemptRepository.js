@@ -75,11 +75,14 @@ export async function listAccessAttempts({
   resultado,
   categoria,
   operatorId,
+  comissaoResponsavelId,
   standId,
+  empresaVinculadaId,
   empresaNome,
   credenciadoId,
   dateFrom,
-  dateTo
+  dateTo,
+  scope
 } = {}) {
   const credencialFilter =
     credenciadoId || categoria
@@ -92,7 +95,9 @@ export async function listAccessAttempts({
   const where = {
     resultado: resultado || undefined,
     operatorId: operatorId || undefined,
+    comissaoResponsavelId: comissaoResponsavelId || undefined,
     standId: standId || undefined,
+    empresaVinculadaId: empresaVinculadaId || undefined,
     empresaNome: empresaNome || undefined,
     createdAt:
       dateFrom || dateTo
@@ -101,7 +106,18 @@ export async function listAccessAttempts({
             lte: dateTo ? new Date(dateTo) : undefined
           }
         : undefined,
-    credencial: credencialFilter
+    credencial: credencialFilter,
+    AND:
+      scope?.comissaoResponsavelId
+        ? [
+            {
+              OR: [
+                { comissaoResponsavelId: scope.comissaoResponsavelId },
+                { operator: { comissaoResponsavelId: scope.comissaoResponsavelId } }
+              ]
+            }
+          ]
+        : undefined
   };
 
   const [items, total] = await Promise.all([
@@ -134,14 +150,19 @@ export async function listAccessAttempts({
 export async function listStandVisitorsReport({
   standId,
   operatorId,
+  comissaoResponsavelId,
+  empresaVinculadaId,
   dateFrom,
   dateTo,
-  categoria
+  categoria,
+  scope
 } = {}) {
   const where = {
     resultado: "ALLOW",
     standId: standId || undefined,
     operatorId: operatorId || undefined,
+    comissaoResponsavelId: comissaoResponsavelId || undefined,
+    empresaVinculadaId: empresaVinculadaId || undefined,
     createdAt:
       dateFrom || dateTo
         ? {
@@ -155,7 +176,18 @@ export async function listStandVisitorsReport({
             categoria
           }
         }
-      : undefined
+      : undefined,
+    AND:
+      scope?.comissaoResponsavelId
+        ? [
+            {
+              OR: [
+                { comissaoResponsavelId: scope.comissaoResponsavelId },
+                { operator: { comissaoResponsavelId: scope.comissaoResponsavelId } }
+              ]
+            }
+          ]
+        : undefined
   };
 
   return prisma.accessAttempt.findMany({
@@ -182,9 +214,22 @@ export async function listStandVisitorsReport({
   });
 }
 
-export async function findAccessAttemptById(id) {
-  return prisma.accessAttempt.findUnique({
-    where: { id },
+export async function findAccessAttemptById(id, scope) {
+  return prisma.accessAttempt.findFirst({
+    where: {
+      id,
+      AND:
+        scope?.comissaoResponsavelId
+          ? [
+              {
+                OR: [
+                  { comissaoResponsavelId: scope.comissaoResponsavelId },
+                  { operator: { comissaoResponsavelId: scope.comissaoResponsavelId } }
+                ]
+              }
+            ]
+          : undefined
+    },
     include: {
       credencial: {
         include: {

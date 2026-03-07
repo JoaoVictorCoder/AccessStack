@@ -168,12 +168,15 @@ async function main() {
   const gateSenha = process.env.GATE_PASSWORD || "Gate@123";
   const leitorEmail = (process.env.LEITOR_EMAIL || "leitor@evento.com").toLowerCase();
   const leitorSenha = process.env.LEITOR_PASSWORD || "Leitor@123";
+  const comissaoEmail = (process.env.COMISSAO_EMAIL || "comissao@evento.com").toLowerCase();
+  const comissaoSenha = process.env.COMISSAO_PASSWORD || "Comissao@123";
 
-  const [adminHash, masterHash, gateHash, leitorHash] = await Promise.all([
+  const [adminHash, masterHash, gateHash, leitorHash, comissaoHash] = await Promise.all([
     bcrypt.hash(adminSenha, 10),
     bcrypt.hash(masterSenha, 10),
     bcrypt.hash(gateSenha, 10),
-    bcrypt.hash(leitorSenha, 10)
+    bcrypt.hash(leitorSenha, 10),
+    bcrypt.hash(comissaoSenha, 10)
   ]);
 
   await prisma.adminUser.upsert({
@@ -211,6 +214,28 @@ async function main() {
   });
 
   await prisma.adminUser.upsert({
+    where: { email: comissaoEmail },
+    update: {
+      nome: "Comissao Organizadora",
+      passwordHash: comissaoHash,
+      role: "COMISSAO_ORGANIZADORA",
+      ativo: true
+    },
+    create: {
+      email: comissaoEmail,
+      nome: "Comissao Organizadora",
+      passwordHash: comissaoHash,
+      role: "COMISSAO_ORGANIZADORA",
+      ativo: true
+    }
+  });
+
+  const comissaoUser = await prisma.adminUser.findUnique({
+    where: { email: comissaoEmail },
+    select: { id: true }
+  });
+
+  await prisma.adminUser.upsert({
     where: { email: gateEmail },
     update: {
       nome: "App Gate",
@@ -219,6 +244,9 @@ async function main() {
       standId: "STAND-JACTO-01",
       standName: "Stand Jacto",
       empresaNome: "Jacto",
+      empresaVinculadaId: "EXPOSITOR-JACTO",
+      empresaVinculadaNome: "Jacto",
+      comissaoResponsavelId: comissaoUser?.id || null,
       permissoesCustomizadas: {
         podeValidarEntrada: true,
         podeVisualizarDadosMinimosCredenciado: true,
@@ -237,6 +265,9 @@ async function main() {
       standId: "STAND-SRFRANCA-01",
       standName: "Stand SR Franca",
       empresaNome: "SR Franca",
+      empresaVinculadaId: "EXPOSITOR-SRFRANCA",
+      empresaVinculadaNome: "SR Franca",
+      comissaoResponsavelId: comissaoUser?.id || null,
       permissoesCustomizadas: {
         podeValidarEntrada: true,
         podeVisualizarDadosMinimosCredenciado: true,
@@ -255,6 +286,7 @@ async function main() {
       nome: "Leitor Catraca",
       passwordHash: leitorHash,
       role: "OPERADOR_QR",
+      comissaoResponsavelId: comissaoUser?.id || null,
       permissoesCustomizadas: {
         podeValidarEntrada: true,
         podeVisualizarDadosMinimosCredenciado: true,
@@ -270,6 +302,7 @@ async function main() {
       nome: "Leitor Catraca",
       passwordHash: leitorHash,
       role: "OPERADOR_QR",
+      comissaoResponsavelId: comissaoUser?.id || null,
       permissoesCustomizadas: {
         podeValidarEntrada: true,
         podeVisualizarDadosMinimosCredenciado: true,

@@ -36,6 +36,10 @@ export async function authenticateAdmin({ email, senha }) {
       standId: user.standId || null,
       standName: user.standName || null,
       empresaNome: user.empresaNome || null,
+      empresaVinculadaId: user.empresaVinculadaId || null,
+      empresaVinculadaNome: user.empresaVinculadaNome || user.empresaNome || null,
+      comissaoResponsavelId: user.comissaoResponsavelId || null,
+      comissaoResponsavelNome: user.comissaoResponsavel?.nome || null,
       permissoesCustomizadas: user.permissoesCustomizadas
     }
   };

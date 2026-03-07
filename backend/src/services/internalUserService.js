@@ -3,7 +3,7 @@ import { AdminRole, defaultOperatorPermissions } from "../domain/enums.js";
 import {
   createInternalUser,
   findAdminByEmail,
-  findAdminById,
+  findInternalUserByIdScoped,
   listInternalUsers,
   updateInternalUser
 } from "../repositories/adminUserRepository.js";
@@ -38,6 +38,34 @@ function sanitizeStand(payload) {
   };
 }
 
+function sanitizeOperatorBinding(payload) {
+  const stand = sanitizeStand(payload);
+  const empresaVinculadaId =
+    typeof payload?.empresaVinculadaId === "string" ? payload.empresaVinculadaId.trim() : "";
+  const empresaVinculadaNomeInput =
+    typeof payload?.empresaVinculadaNome === "string" ? payload.empresaVinculadaNome.trim() : "";
+  const empresaVinculadaNome = empresaVinculadaNomeInput || stand.empresaNome || "";
+
+  return {
+    ...stand,
+    empresaVinculadaId: empresaVinculadaId || null,
+    empresaVinculadaNome: empresaVinculadaNome || null,
+    empresaNome: stand.empresaNome || empresaVinculadaNome || null
+  };
+}
+
+function clearOperatorBinding() {
+  return {
+    standId: null,
+    standName: null,
+    empresaNome: null,
+    empresaVinculadaId: null,
+    empresaVinculadaNome: null,
+    comissaoResponsavelId: null,
+    permissoesCustomizadas: null
+  };
+}
+
 function normalizeStandToken(value) {
   return String(value || "")
     .normalize("NFD")
@@ -63,13 +91,63 @@ function mapInternalUser(user) {
     standId: user.standId,
     standName: user.standName,
     empresaNome: user.empresaNome,
+    empresaVinculadaId: user.empresaVinculadaId,
+    empresaVinculadaNome: user.empresaVinculadaNome,
+    comissaoResponsavelId: user.comissaoResponsavelId,
+    comissaoResponsavelNome: user.comissaoResponsavel?.nome || null,
     permissoesCustomizadas: user.permissoesCustomizadas,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt
   };
 }
 
+function isMasterScope(actor) {
+  return actor?.role === AdminRole.MASTER_ADMIN || actor?.role === AdminRole.SYSTEM;
+}
+
+function isComissao(actor) {
+  return actor?.role === AdminRole.COMISSAO_ORGANIZADORA;
+}
+
+function canManageInternalUsers(actor) {
+  return isMasterScope(actor) || isComissao(actor);
+}
+
+function getScopeWhere(actor) {
+  if (isMasterScope(actor)) return {};
+  if (isComissao(actor)) {
+    return { role: AdminRole.OPERADOR_QR, comissaoResponsavelId: actor.id };
+  }
+  return null;
+}
+
+function sanitizeComissaoResponsavelId(payload) {
+  if (typeof payload?.comissaoResponsavelId !== "string") return null;
+  const value = payload.comissaoResponsavelId.trim();
+  return value || null;
+}
+
+function resolveCreatableRole(actor, role) {
+  if (isComissao(actor)) {
+    if (role !== AdminRole.OPERADOR_QR) {
+      return { error: "comissao organizadora pode criar apenas OPERADOR_QR" };
+    }
+    return { role: AdminRole.OPERADOR_QR };
+  }
+  if (isMasterScope(actor)) {
+    if (![AdminRole.ADMIN, AdminRole.OPERADOR_QR, AdminRole.COMISSAO_ORGANIZADORA].includes(role)) {
+      return { error: "somente ADMIN, COMISSAO_ORGANIZADORA ou OPERADOR_QR podem ser criados por esta rota" };
+    }
+    return { role };
+  }
+  return { error: "perfil sem permissao para gerenciar usuarios internos" };
+}
+
 export async function createInternalUserService(payload, actor) {
+  if (!canManageInternalUsers(actor)) {
+    return { error: "perfil sem permissao para gerenciar usuarios internos" };
+  }
+
   const nome = (payload?.nome || "").trim();
   const email = (payload?.email || "").trim().toLowerCase();
   const senha = payload?.senha || "";
@@ -86,8 +164,9 @@ export async function createInternalUserService(payload, actor) {
   if (!Object.values(AdminRole).includes(role)) {
     return { error: "role invalida" };
   }
-  if (![AdminRole.ADMIN, AdminRole.OPERADOR_QR].includes(role)) {
-    return { error: "somente ADMIN ou OPERADOR_QR podem ser criados por esta rota" };
+  const roleCheck = resolveCreatableRole(actor, role);
+  if (roleCheck.error) {
+    return { error: roleCheck.error };
   }
 
   const exists = await findAdminByEmail(email);
@@ -100,10 +179,14 @@ export async function createInternalUserService(payload, actor) {
     nome,
     email,
     passwordHash,
-    role,
+    role: roleCheck.role,
     ativo: true,
-    ...sanitizeStand(payload),
-    permissoesCustomizadas: sanitizePermissions(role, payload?.permissoesCustomizadas)
+    ...(roleCheck.role === AdminRole.OPERADOR_QR ? sanitizeOperatorBinding(payload) : clearOperatorBinding()),
+    comissaoResponsavelId:
+      roleCheck.role === AdminRole.OPERADOR_QR
+        ? (isComissao(actor) ? actor.id : sanitizeComissaoResponsavelId(payload))
+        : null,
+    permissoesCustomizadas: sanitizePermissions(roleCheck.role, payload?.permissoesCustomizadas)
   });
 
   await createAuditLog({
@@ -115,22 +198,30 @@ export async function createInternalUserService(payload, actor) {
     detalhes: {
       role: created.role,
       email: created.email,
+      comissaoResponsavelId: created.comissaoResponsavelId,
       standId: created.standId,
       standName: created.standName,
-      empresaNome: created.empresaNome
+      empresaNome: created.empresaNome,
+      empresaVinculadaId: created.empresaVinculadaId,
+      empresaVinculadaNome: created.empresaVinculadaNome
     }
   });
 
   return { user: mapInternalUser(created) };
 }
 
-export async function listInternalUsersService() {
-  const users = await listInternalUsers();
+export async function listInternalUsersService(actor) {
+  const where = getScopeWhere(actor);
+  if (!where) return { error: "perfil sem permissao para gerenciar usuarios internos" };
+  const users = await listInternalUsers(where);
   return users.map(mapInternalUser);
 }
 
 export async function updateInternalUserService(id, payload, actor) {
-  const current = await findAdminById(id);
+  const scopeWhere = getScopeWhere(actor);
+  if (!scopeWhere) return { error: "perfil sem permissao para gerenciar usuarios internos" };
+
+  const current = await findInternalUserByIdScoped(id, scopeWhere);
   if (!current) {
     return { notFound: true };
   }
@@ -143,7 +234,11 @@ export async function updateInternalUserService(id, payload, actor) {
     if (!Object.values(AdminRole).includes(payload.role)) {
       return { error: "role invalida" };
     }
-    if ([AdminRole.MASTER_ADMIN, AdminRole.SYSTEM].includes(payload.role)) {
+    if (isComissao(actor)) {
+      if (payload.role !== AdminRole.OPERADOR_QR) {
+        return { error: "comissao organizadora nao pode alterar role para este usuario" };
+      }
+    } else if ([AdminRole.MASTER_ADMIN, AdminRole.SYSTEM].includes(payload.role)) {
       return { error: "nao e permitido elevar para MASTER_ADMIN/SYSTEM por esta rota" };
     }
     next.role = payload.role;
@@ -160,8 +255,30 @@ export async function updateInternalUserService(id, payload, actor) {
     next.permissoesCustomizadas = sanitizePermissions(role, payload.permissoesCustomizadas);
   }
 
-  if ("standId" in (payload || {}) || "standName" in (payload || {}) || "empresaNome" in (payload || {})) {
-    Object.assign(next, sanitizeStand(payload));
+  const nextRole = next.role || current.role;
+  if (
+    "standId" in (payload || {}) ||
+    "standName" in (payload || {}) ||
+    "empresaNome" in (payload || {}) ||
+    "empresaVinculadaId" in (payload || {}) ||
+    "empresaVinculadaNome" in (payload || {}) ||
+    "comissaoResponsavelId" in (payload || {})
+  ) {
+    if (nextRole !== AdminRole.OPERADOR_QR) {
+      Object.assign(next, clearOperatorBinding());
+    } else {
+      Object.assign(next, sanitizeOperatorBinding(payload));
+      if (isComissao(actor)) {
+        next.comissaoResponsavelId = actor.id;
+      } else if ("comissaoResponsavelId" in (payload || {})) {
+        next.comissaoResponsavelId = sanitizeComissaoResponsavelId(payload);
+      }
+    }
+  }
+  if (nextRole !== AdminRole.OPERADOR_QR) {
+    Object.assign(next, clearOperatorBinding());
+  } else if (isComissao(actor)) {
+    next.comissaoResponsavelId = actor.id;
   }
 
   const updated = await updateInternalUser(id, next);
@@ -179,7 +296,10 @@ export async function updateInternalUserService(id, payload, actor) {
 }
 
 export async function updateInternalUserActiveService(id, ativo, actor) {
-  const current = await findAdminById(id);
+  const scopeWhere = getScopeWhere(actor);
+  if (!scopeWhere) return { error: "perfil sem permissao para gerenciar usuarios internos" };
+
+  const current = await findInternalUserByIdScoped(id, scopeWhere);
   if (!current) {
     return { notFound: true };
   }
@@ -199,7 +319,10 @@ export async function updateInternalUserActiveService(id, ativo, actor) {
 }
 
 export async function updateInternalUserPermissionsService(id, permissions, actor) {
-  const current = await findAdminById(id);
+  const scopeWhere = getScopeWhere(actor);
+  if (!scopeWhere) return { error: "perfil sem permissao para gerenciar usuarios internos" };
+
+  const current = await findInternalUserByIdScoped(id, scopeWhere);
   if (!current) {
     return { notFound: true };
   }

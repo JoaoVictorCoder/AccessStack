@@ -294,7 +294,9 @@ function AdminDashboardPage({ admin, onLogout }) {
   const [backupStatus, setBackupStatus] = useState(null);
   const [accessLogFilters, setAccessLogFilters] = useState({
     operatorId: "",
+    comissaoResponsavelId: "",
     standId: "",
+    empresaVinculadaId: "",
     dateFrom: "",
     dateTo: "",
     categoria: "",
@@ -303,6 +305,8 @@ function AdminDashboardPage({ admin, onLogout }) {
   const [standReportFilters, setStandReportFilters] = useState({
     standId: "",
     operatorId: "",
+    comissaoResponsavelId: "",
+    empresaVinculadaId: "",
     dateFrom: "",
     dateTo: "",
     categoria: ""
@@ -313,32 +317,55 @@ function AdminDashboardPage({ admin, onLogout }) {
     setLoading(true);
     setError("");
     try {
-      const [listData, eventData, logData, overview, fraud, descarbonizacao] = await Promise.all([
-        getAdminCredenciados(activeFilters),
-        getAdminEventos({ limit: 60 }),
-        getAdminAuditLogs({ page: 1, pageSize: 40 }),
-        getAdminAnalyticsOverview(),
-        getAdminAnalyticsFraud(),
-        getAdminAnalyticsDescarbonizacao()
-      ]);
-      setListResponse(listData);
-      setEventos(eventData);
-      setAuditLogs(logData.items || []);
-      setAnalyticsOverview(overview);
-      setAnalyticsFraud(fraud);
-      setAnalyticsDescarbonizacao(descarbonizacao);
-
-      if (admin?.role === "MASTER_ADMIN") {
-        const [usersData, accessLogsData, backupData, reportData] = await Promise.all([
+      if (admin?.role === "COMISSAO_ORGANIZADORA") {
+        const [usersData, accessLogsData, reportData] = await Promise.all([
           getAdminUsers(),
           getAdminAccessLogs({ page: 1, pageSize: 30, ...accessLogFilters }),
-          getAdminBackupStatus(),
           getAdminStandVisitorsReport(standReportFilters)
         ]);
         setInternalUsers(usersData.items || []);
         setAccessLogs(accessLogsData.items || []);
-        setBackupStatus(backupData);
         setStandReport(reportData.items || []);
+        setListResponse({ items: [], page: 1, totalPages: 1, total: 0 });
+        setEventos([]);
+        setAuditLogs([]);
+        setAnalyticsOverview(null);
+        setAnalyticsFraud([]);
+        setAnalyticsDescarbonizacao(null);
+        setBackupStatus(null);
+      } else {
+        const [listData, eventData, logData, overview, fraud, descarbonizacao] = await Promise.all([
+          getAdminCredenciados(activeFilters),
+          getAdminEventos({ limit: 60 }),
+          getAdminAuditLogs({ page: 1, pageSize: 40 }),
+          getAdminAnalyticsOverview(),
+          getAdminAnalyticsFraud(),
+          getAdminAnalyticsDescarbonizacao()
+        ]);
+        setListResponse(listData);
+        setEventos(eventData);
+        setAuditLogs(logData.items || []);
+        setAnalyticsOverview(overview);
+        setAnalyticsFraud(fraud);
+        setAnalyticsDescarbonizacao(descarbonizacao);
+
+        if (admin?.role === "MASTER_ADMIN") {
+          const [usersData, accessLogsData, backupData, reportData] = await Promise.all([
+            getAdminUsers(),
+            getAdminAccessLogs({ page: 1, pageSize: 30, ...accessLogFilters }),
+            getAdminBackupStatus(),
+            getAdminStandVisitorsReport(standReportFilters)
+          ]);
+          setInternalUsers(usersData.items || []);
+          setAccessLogs(accessLogsData.items || []);
+          setBackupStatus(backupData);
+          setStandReport(reportData.items || []);
+        } else {
+          setInternalUsers([]);
+          setAccessLogs([]);
+          setStandReport([]);
+          setBackupStatus(null);
+        }
       }
     } catch (loadError) {
       setError(loadError.message || "Falha ao carregar dados administrativos.");
@@ -455,9 +482,10 @@ function AdminDashboardPage({ admin, onLogout }) {
         analyticsDescarbonizacao={analyticsDescarbonizacao}
       />
 
-      {admin?.role === "MASTER_ADMIN" && (
+      {(admin?.role === "MASTER_ADMIN" || admin?.role === "COMISSAO_ORGANIZADORA") && (
         <>
           <InternalUsersPanel
+            managerRole={admin?.role}
             users={internalUsers}
             currentUserId={admin?.id}
             onCreate={async (payload) => {
@@ -498,11 +526,53 @@ function AdminDashboardPage({ admin, onLogout }) {
                 </select>
               </label>
               <label>
+                Comissao
+                <input
+                  value={accessLogFilters.comissaoResponsavelId}
+                  onChange={(event) =>
+                    setAccessLogFilters((prev) => ({
+                      ...prev,
+                      comissaoResponsavelId: event.target.value
+                    }))
+                  }
+                />
+              </label>
+              <label>
                 Stand ID
                 <input
                   value={accessLogFilters.standId}
                   onChange={(event) =>
                     setAccessLogFilters((prev) => ({ ...prev, standId: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Empresa ID
+                <input
+                  value={accessLogFilters.empresaVinculadaId}
+                  onChange={(event) =>
+                    setAccessLogFilters((prev) => ({ ...prev, empresaVinculadaId: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Comissao
+                <input
+                  value={standReportFilters.comissaoResponsavelId}
+                  onChange={(event) =>
+                    setStandReportFilters((prev) => ({
+                      ...prev,
+                      comissaoResponsavelId: event.target.value
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Empresa ID
+                <input
+                  value={standReportFilters.empresaVinculadaId}
+                  onChange={(event) =>
+                    setStandReportFilters((prev) => ({ ...prev, empresaVinculadaId: event.target.value }))
                   }
                 />
               </label>
@@ -564,7 +634,8 @@ function AdminDashboardPage({ admin, onLogout }) {
                   </span>
                   <small>
                     Stand: {item.standName || "-"} ({item.standId || "-"}) | Empresa:{" "}
-                    {item.empresaNome || "-"}
+                    {item.empresaVinculadaNome || item.empresaNome || "-"} | Comissao:{" "}
+                    {item.comissaoResponsavelNome || item.comissaoResponsavelId || "-"}
                   </small>
                   <small>{new Date(item.createdAt).toLocaleString("pt-BR")}</small>
                 </li>
@@ -643,7 +714,7 @@ function AdminDashboardPage({ admin, onLogout }) {
                   </strong>
                   <span>
                     Stand: {item.standName || "-"} ({item.standId || "-"}) | Empresa:{" "}
-                    {item.empresaNome || "-"}
+                    {item.empresaVinculadaNome || item.empresaNome || "-"}
                   </span>
                   <small>
                     Contato: {item.visitor?.email || "-"} | {item.visitor?.celular || "-"} | LGPD
@@ -656,21 +727,23 @@ function AdminDashboardPage({ admin, onLogout }) {
             </ul>
           </section>
 
-          <section className="card">
-            <h3>Backup / Continuidade</h3>
-            <p>Diretorio: {backupStatus?.backupDir || "-"}</p>
-            <p>Total de arquivos: {backupStatus?.totalFiles ?? 0}</p>
-            <p>Ultimo backup: {backupStatus?.latestFile || "nenhum"}</p>
-            <button
-              type="button"
-              onClick={async () => {
-                await exportAdminBackup();
-                await loadData(filters);
-              }}
-            >
-              Gerar backup agora
-            </button>
-          </section>
+          {admin?.role === "MASTER_ADMIN" && (
+            <section className="card">
+              <h3>Backup / Continuidade</h3>
+              <p>Diretorio: {backupStatus?.backupDir || "-"}</p>
+              <p>Total de arquivos: {backupStatus?.totalFiles ?? 0}</p>
+              <p>Ultimo backup: {backupStatus?.latestFile || "nenhum"}</p>
+              <button
+                type="button"
+                onClick={async () => {
+                  await exportAdminBackup();
+                  await loadData(filters);
+                }}
+              >
+                Gerar backup agora
+              </button>
+            </section>
+          )}
         </>
       )}
     </main>
@@ -799,6 +872,7 @@ function App() {
   const [admin, setAdmin] = useState(null);
   const [operator, setOperator] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const isOperatorSession = Boolean(operator) && !admin;
 
   useEffect(() => {
     me()
@@ -834,12 +908,14 @@ function App() {
           <NavLink to="/" end className={({ isActive }) => (isActive ? "tab active" : "tab")}>
             Publico
           </NavLink>
-          <NavLink
-            to={admin ? "/admin" : "/admin/login"}
-            className={({ isActive }) => (isActive ? "tab active" : "tab")}
-          >
-            Admin
-          </NavLink>
+          {!isOperatorSession && (
+            <NavLink
+              to={admin ? "/admin" : "/admin/login"}
+              className={({ isActive }) => (isActive ? "tab active" : "tab")}
+            >
+              Admin
+            </NavLink>
+          )}
           <NavLink
             to={operator ? "/operator" : "/operator/login"}
             className={({ isActive }) => (isActive ? "tab active" : "tab")}

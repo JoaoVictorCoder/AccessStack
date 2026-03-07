@@ -24,7 +24,11 @@ export async function validateCheckInHandler(req, res) {
     actorRole: req.auth?.role,
     standId: req.auth?.standId || null,
     standName: req.auth?.standName || null,
-    empresaNome: req.auth?.empresaNome || null
+    empresaNome: req.auth?.empresaNome || null,
+    empresaVinculadaId: req.auth?.empresaVinculadaId || null,
+    empresaVinculadaNome: req.auth?.empresaVinculadaNome || null,
+    comissaoResponsavelId: req.auth?.comissaoResponsavelId || null,
+    comissaoResponsavelNome: req.auth?.comissaoResponsavelNome || null
   });
 
   return res.json(
