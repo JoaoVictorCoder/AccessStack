@@ -17,16 +17,38 @@ const initialEvents = [
 ];
 
 async function main() {
+  const evento = await prisma.evento.upsert({
+    where: { id: "11111111-1111-1111-1111-111111111111" },
+    update: {
+      nomeEvento: "Fatec Hackathon Credenciamento Setor Cafeeiro",
+      isGratuito: true,
+      ativo: true
+    },
+    create: {
+      id: "11111111-1111-1111-1111-111111111111",
+      nomeEvento: "Fatec Hackathon Credenciamento Setor Cafeeiro",
+      isGratuito: true,
+      ativo: true
+    }
+  });
+
   const seeds = [
     {
+      eventoId: evento.id,
       categoria: "EXPOSITOR",
       nomeCompleto: "Mariana Silva",
-      cpf: "11111111111",
-      rg: "1234567",
+      cpf: null,
       celular: "11999990001",
       email: "mariana.expositor@demo.com",
       municipio: "Campinas",
+      cidadeOrigem: "Campinas",
       uf: "SP",
+      nacionalidade: null,
+      tipoCombustivel: "GASOLINA",
+      combustivel: "GASOLINA",
+      distanciaKm: 286,
+      pegadaCarbonoEstimada: 583.44,
+      pcd: false,
       aceitouLgpd: true,
       cnpj: "12345678000199",
       siteEmpresa: "https://cafesdeminas.com.br",
@@ -34,28 +56,44 @@ async function main() {
       statusCredenciamento: "CADASTRADO"
     },
     {
+      eventoId: evento.id,
       categoria: "CAFEICULTOR",
       nomeCompleto: "Carlos Pereira",
-      cpf: "22222222222",
-      rg: "7654321",
+      cpf: "52998224725",
+      cnpj: null,
       celular: "11999990002",
       email: "carlos.cafeicultor@demo.com",
       municipio: "Varginha",
+      cidadeOrigem: "Varginha",
       uf: "MG",
+      nacionalidade: null,
+      tipoCombustivel: "DIESEL",
+      combustivel: "DIESEL",
+      distanciaKm: 283,
+      pegadaCarbonoEstimada: 735.8,
+      pcd: false,
       aceitouLgpd: true,
       ccir: "CCIR-000123",
       nomePropriedade: "Sitio Boa Safra",
       statusCredenciamento: "CADASTRADO"
     },
     {
+      eventoId: evento.id,
       categoria: "VISITANTE",
       nomeCompleto: "Ana Costa",
-      cpf: "33333333333",
-      rg: "9876543",
+      cpf: "39053344705",
+      cnpj: null,
       celular: "11999990003",
       email: "ana.visitante@demo.com",
       municipio: "Sao Paulo",
+      cidadeOrigem: "Sao Paulo",
       uf: "SP",
+      nacionalidade: "Brasil",
+      tipoCombustivel: "NAO_INFORMADO",
+      combustivel: "NAO_INFORMADO",
+      distanciaKm: 401,
+      pegadaCarbonoEstimada: 72.18,
+      pcd: true,
       aceitouLgpd: true,
       statusCredenciamento: "CADASTRADO"
     }
@@ -121,13 +159,36 @@ async function main() {
 
   const adminEmail = (process.env.ADMIN_EMAIL || "admin@evento.com").toLowerCase();
   const adminSenha = process.env.ADMIN_PASSWORD || "Admin@123";
+  const masterEmail = (process.env.MASTER_EMAIL || "master@evento.com").toLowerCase();
+  const masterSenha = process.env.MASTER_PASSWORD || "Master@123";
   const gateEmail = (process.env.GATE_EMAIL || "gate@evento.com").toLowerCase();
   const gateSenha = process.env.GATE_PASSWORD || "Gate@123";
+  const leitorEmail = (process.env.LEITOR_EMAIL || "leitor@evento.com").toLowerCase();
+  const leitorSenha = process.env.LEITOR_PASSWORD || "Leitor@123";
 
-  const [adminHash, gateHash] = await Promise.all([
+  const [adminHash, masterHash, gateHash, leitorHash] = await Promise.all([
     bcrypt.hash(adminSenha, 10),
-    bcrypt.hash(gateSenha, 10)
+    bcrypt.hash(masterSenha, 10),
+    bcrypt.hash(gateSenha, 10),
+    bcrypt.hash(leitorSenha, 10)
   ]);
+
+  await prisma.adminUser.upsert({
+    where: { email: masterEmail },
+    update: {
+      nome: "Master Admin",
+      passwordHash: masterHash,
+      role: "MASTER_ADMIN",
+      ativo: true
+    },
+    create: {
+      email: masterEmail,
+      nome: "Master Admin",
+      passwordHash: masterHash,
+      role: "MASTER_ADMIN",
+      ativo: true
+    }
+  });
 
   await prisma.adminUser.upsert({
     where: { email: adminEmail },
@@ -151,14 +212,63 @@ async function main() {
     update: {
       nome: "App Gate",
       passwordHash: gateHash,
-      role: "APP_GATE",
+      role: "OPERADOR_QR",
+      permissoesCustomizadas: {
+        podeValidarEntrada: true,
+        podeVisualizarDadosMinimosCredenciado: true,
+        podeVerHistoricoBasicoDaCredencial: true,
+        podeRegistrarObservacaoOperacional: true,
+        podeConsultarUltimasEntradas: true,
+        podeUsarCameraParaLeituraQR: true
+      },
       ativo: true
     },
     create: {
       email: gateEmail,
       nome: "App Gate",
       passwordHash: gateHash,
-      role: "APP_GATE",
+      role: "OPERADOR_QR",
+      permissoesCustomizadas: {
+        podeValidarEntrada: true,
+        podeVisualizarDadosMinimosCredenciado: true,
+        podeVerHistoricoBasicoDaCredencial: true,
+        podeRegistrarObservacaoOperacional: true,
+        podeConsultarUltimasEntradas: true,
+        podeUsarCameraParaLeituraQR: true
+      },
+      ativo: true
+    }
+  });
+
+  await prisma.adminUser.upsert({
+    where: { email: leitorEmail },
+    update: {
+      nome: "Leitor Catraca",
+      passwordHash: leitorHash,
+      role: "OPERADOR_QR",
+      permissoesCustomizadas: {
+        podeValidarEntrada: true,
+        podeVisualizarDadosMinimosCredenciado: true,
+        podeVerHistoricoBasicoDaCredencial: true,
+        podeRegistrarObservacaoOperacional: true,
+        podeConsultarUltimasEntradas: true,
+        podeUsarCameraParaLeituraQR: true
+      },
+      ativo: true
+    },
+    create: {
+      email: leitorEmail,
+      nome: "Leitor Catraca",
+      passwordHash: leitorHash,
+      role: "OPERADOR_QR",
+      permissoesCustomizadas: {
+        podeValidarEntrada: true,
+        podeVisualizarDadosMinimosCredenciado: true,
+        podeVerHistoricoBasicoDaCredencial: true,
+        podeRegistrarObservacaoOperacional: true,
+        podeConsultarUltimasEntradas: true,
+        podeUsarCameraParaLeituraQR: true
+      },
       ativo: true
     }
   });
