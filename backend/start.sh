@@ -2,7 +2,7 @@
 set -e
 
 echo "Aguardando banco..."
-until npx prisma db push; do
+until npm run prisma:migrate:deploy || npx prisma db push; do
   sleep 2
 done
 

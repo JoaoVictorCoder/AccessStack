@@ -1,104 +1,40 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { Navigate, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import {
+  createAdminComissao,
+  createCredenciadoPublic,
+  getAdminAnalyticsFraud,
+  getAdminAnalyticsOverview,
+  getAdminAuditLogs,
+  getAdminCredenciadoById,
+  getAdminCredenciadoEventos,
+  getAdminCredenciados,
+  getAdminCredencialById,
+  getAdminEventos,
+  getPublicCredenciadoStatus,
+  getPublicCredencialPdfUrl,
+  getPublicCredencialQr,
+  login,
+  logout,
+  me,
+  validateAdminCheckIn
+} from "./api/credenciamentoApi";
+import AdminCredencialView from "./components/AdminCredencialView";
+import AdminDashboard from "./components/AdminDashboard";
+import AdminLoginForm from "./components/AdminLoginForm";
+import CredenciadoForm from "./components/CredenciadoForm";
+import { baseForm } from "./constants/formConfig";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
-
-const categoriaOptions = [
-  { value: "EXPOSITOR", label: "Expositor" },
-  { value: "CAFEICULTOR", label: "Cafeicultor" },
-  { value: "VISITANTE", label: "Visitante" },
-  { value: "IMPRENSA", label: "Imprensa" },
-  { value: "COMISSAO_ORGANIZADORA", label: "Comissao Organizadora" },
-  { value: "COLABORADOR_TERCEIRIZADO", label: "Colaborador Terceirizado" }
-];
-
-const categoryExtraFields = {
-  EXPOSITOR: ["cnpj", "siteEmpresa", "nomeEmpresa"],
-  CAFEICULTOR: ["ccir", "nomePropriedade"],
-  VISITANTE: [],
-  IMPRENSA: ["cnpj", "nomeVeiculo", "siteEmpresa"],
-  COMISSAO_ORGANIZADORA: ["funcaoCargo"],
-  COLABORADOR_TERCEIRIZADO: ["cnpj", "nomeEmpresa", "funcaoCargo"]
-};
-
-const labels = {
-  nomeCompleto: "Nome completo",
-  cpf: "CPF",
-  rg: "RG",
-  celular: "Celular",
-  email: "E-mail",
-  municipio: "Municipio",
-  uf: "UF",
-  cnpj: "CNPJ",
-  siteEmpresa: "Site da empresa",
-  nomeEmpresa: "Nome da empresa",
-  ccir: "CCIR",
-  nomePropriedade: "Nome da propriedade",
-  nomeVeiculo: "Nome do veiculo",
-  funcaoCargo: "Funcao/Cargo"
-};
-
-const baseForm = {
-  categoria: "EXPOSITOR",
-  nomeCompleto: "",
-  cpf: "",
-  rg: "",
-  celular: "",
-  email: "",
-  municipio: "",
-  uf: "",
-  aceitouLgpd: false,
-  cnpj: "",
-  siteEmpresa: "",
-  nomeEmpresa: "",
-  ccir: "",
-  nomePropriedade: "",
-  nomeVeiculo: "",
-  funcaoCargo: ""
-};
-
-function App() {
+function PublicAreaPage() {
   const [form, setForm] = useState(baseForm);
-  const [list, setList] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [selectedEvents, setSelectedEvents] = useState([]);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const extraFields = useMemo(
-    () => categoryExtraFields[form.categoria] || [],
-    [form.categoria]
-  );
-
-  async function loadCredenciados() {
-    const response = await fetch(`${API_URL}/credenciados`);
-    const data = await response.json();
-    setList(data);
-  }
-
-  async function loadCredenciado(id) {
-    const response = await fetch(`${API_URL}/credenciados/${id}`);
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || "Falha ao carregar credenciado.");
-    }
-    setSelected(data);
-  }
-
-  async function loadCredenciadoEventos(id) {
-    const response = await fetch(`${API_URL}/credenciados/${id}/eventos`);
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || "Falha ao carregar eventos.");
-    }
-    setSelectedEvents(data);
-  }
-
-  useEffect(() => {
-    loadCredenciados().catch(() => {
-      setError("Nao foi possivel carregar a lista.");
-    });
-  }, []);
+  const [lastCreated, setLastCreated] = useState(null);
+  const [statusId, setStatusId] = useState("");
+  const [statusData, setStatusData] = useState(null);
+  const [statusError, setStatusError] = useState("");
+  const [qrDataUrl, setQrDataUrl] = useState("");
 
   function onChange(event) {
     const { name, value, type, checked } = event.target;
@@ -111,32 +47,16 @@ function App() {
   async function onSubmit(event) {
     event.preventDefault();
     setError("");
+    setSuccess("");
     setSaving(true);
 
     try {
-      const response = await fetch(`${API_URL}/credenciados`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || (data.errors || []).join(", "));
-      }
-
+      const created = await createCredenciadoPublic(form);
+      setLastCreated(created);
       setSuccess(
-        `Credenciamento criado. Status: ${data.statusCredenciamento}. Credencial: ${data.credencial?.codigoUnico || "N/A"}`
+        `Cadastro realizado com sucesso. Credencial ${created.credencial?.codigoUnico || "N/A"} gerada.`
       );
-
-      setForm((prev) => ({
-        ...baseForm,
-        categoria: prev.categoria
-      }));
-      await loadCredenciados();
-      await loadCredenciado(data.id);
-      await loadCredenciadoEventos(data.id);
+      setForm((prev) => ({ ...baseForm, categoria: prev.categoria }));
     } catch (submitError) {
       setError(submitError.message || "Erro ao cadastrar.");
     } finally {
@@ -144,113 +64,334 @@ function App() {
     }
   }
 
+  async function fetchStatus(event) {
+    event.preventDefault();
+    setStatusError("");
+    setStatusData(null);
+    setQrDataUrl("");
+    try {
+      const data = await getPublicCredenciadoStatus(statusId);
+      setStatusData(data);
+      if (data.credencial?.id) {
+        const qr = await getPublicCredencialQr(data.credencial.id);
+        setQrDataUrl(qr.qrcode || "");
+      }
+    } catch (loadError) {
+      setStatusError(loadError.message || "Falha ao consultar status.");
+    }
+  }
+
   return (
-    <main className="page">
+    <main className="single-page">
       <section className="card">
-        <h1>Credenciamento - Setor Cafeeiro</h1>
-        <p>Checkpoint 1 - Base IAM para identidade e acesso em eventos</p>
-
-        <form onSubmit={onSubmit} className="grid">
-          <label>
-            Categoria
-            <select
-              name="categoria"
-              value={form.categoria}
-              onChange={onChange}
-              required
-            >
-              {categoriaOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {[
-            "nomeCompleto",
-            "cpf",
-            "rg",
-            "celular",
-            "email",
-            "municipio",
-            "uf"
-          ].map((field) => (
-            <label key={field}>
-              {labels[field]}
-              <input
-                name={field}
-                value={form[field]}
-                onChange={onChange}
-                required
-                maxLength={field === "uf" ? 2 : undefined}
-              />
-            </label>
-          ))}
-
-          {extraFields.map((field) => (
-            <label key={field}>
-              {labels[field]}
-              <input name={field} value={form[field]} onChange={onChange} required />
-            </label>
-          ))}
-
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              name="aceitouLgpd"
-              checked={form.aceitouLgpd}
-              onChange={onChange}
-              required
-            />
-            Aceito os termos da LGPD
-          </label>
-
-          <button type="submit" disabled={saving}>
-            {saving ? "Salvando..." : "Cadastrar"}
-          </button>
-        </form>
-
+        <h2>Cadastro Publico</h2>
+        <p>Preencha seus dados para credenciamento no evento.</p>
+        <CredenciadoForm form={form} saving={saving} onChange={onChange} onSubmit={onSubmit} />
         {error && <p className="error">{error}</p>}
         {success && <p className="success">{success}</p>}
+        {lastCreated?.id && <p>ID do cadastro: {lastCreated.id}</p>}
       </section>
 
       <section className="card">
-        <h2>Identidades Credenciadas</h2>
-        <ul className="list">
-          {list.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    setError("");
-                    await loadCredenciado(item.id);
-                    await loadCredenciadoEventos(item.id);
-                  } catch (loadError) {
-                    setError(loadError.message);
-                  }
-                }}
-              >
-                <strong>{item.nomeCompleto}</strong>
-                <span>
-                  {item.categoria} | {item.statusCredenciamento}
-                </span>
-                <span>Credencial: {item.credencial?.codigoUnico || "N/A"}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <h2>Consulta publica de status</h2>
+        <form className="grid single-column" onSubmit={fetchStatus}>
+          <label>
+            ID do credenciado
+            <input
+              value={statusId}
+              onChange={(event) => setStatusId(event.target.value)}
+              required
+            />
+          </label>
+          <button type="submit">Consultar status</button>
+        </form>
 
-        {selected && <h3>Detalhes da Identidade</h3>}
-        {selected && <pre className="details">{JSON.stringify(selected, null, 2)}</pre>}
+        {statusError && <p className="error">{statusError}</p>}
+        {statusData && (
+          <div className="details-grid">
+            <div className="detail-field">
+              <span>Status credenciamento</span>
+              <strong>{statusData.statusCredenciamento}</strong>
+            </div>
+            <div className="detail-field">
+              <span>Status credencial</span>
+              <strong>{statusData.credencial?.statusCredencial || "-"}</strong>
+            </div>
+            <div className="detail-field">
+              <span>Codigo da credencial</span>
+              <strong>{statusData.credencial?.codigoUnico || "-"}</strong>
+            </div>
+            {statusData.credencial?.id && (
+              <div className="detail-field">
+                <span>PDF da credencial</span>
+                <a
+                  className="link-button"
+                  target="_blank"
+                  rel="noreferrer"
+                  href={getPublicCredencialPdfUrl(statusData.credencial.id)}
+                >
+                  Abrir PDF
+                </a>
+              </div>
+            )}
+          </div>
+        )}
 
-        {selected && <h3>Historico de Eventos</h3>}
-        {selected && (
-          <pre className="details">{JSON.stringify(selectedEvents, null, 2)}</pre>
+        {qrDataUrl && (
+          <div className="qr-section">
+            <h3>QR Code</h3>
+            <img src={qrDataUrl} alt="QR da credencial" className="qr-image" />
+          </div>
         )}
       </section>
     </main>
+  );
+}
+
+function AdminLoginPage({ onLoggedIn }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  return (
+    <main className="single-page">
+      <AdminLoginForm
+        loading={loading}
+        error={error}
+        onSubmit={async (payload) => {
+          setLoading(true);
+          setError("");
+          try {
+            const data = await login(payload);
+            onLoggedIn(data.admin);
+            navigate("/admin");
+          } catch (loginError) {
+            setError(loginError.message || "Falha no login.");
+          } finally {
+            setLoading(false);
+          }
+        }}
+      />
+    </main>
+  );
+}
+
+function AdminDashboardPage({ admin, onLogout }) {
+  const [listResponse, setListResponse] = useState({ items: [], page: 1, totalPages: 1 });
+  const [eventos, setEventos] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [analyticsOverview, setAnalyticsOverview] = useState(null);
+  const [analyticsFraud, setAnalyticsFraud] = useState([]);
+  const [checkInResult, setCheckInResult] = useState(null);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [filters, setFilters] = useState({
+    search: "",
+    categoria: "",
+    page: 1,
+    pageSize: 10
+  });
+  const [selectedDetails, setSelectedDetails] = useState(null);
+  const [selectedEvents, setSelectedEvents] = useState([]);
+  const [creatingComissao, setCreatingComissao] = useState(false);
+  const [createComissaoError, setCreateComissaoError] = useState("");
+
+  async function loadData(activeFilters = filters) {
+    setLoading(true);
+    setError("");
+    try {
+      const [listData, eventData, logData, overview, fraud] = await Promise.all([
+        getAdminCredenciados(activeFilters),
+        getAdminEventos({ limit: 60 }),
+        getAdminAuditLogs({ page: 1, pageSize: 40 }),
+        getAdminAnalyticsOverview(),
+        getAdminAnalyticsFraud()
+      ]);
+      setListResponse(listData);
+      setEventos(eventData);
+      setAuditLogs(logData.items || []);
+      setAnalyticsOverview(overview);
+      setAnalyticsFraud(fraud);
+    } catch (loadError) {
+      setError(loadError.message || "Falha ao carregar dados administrativos.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData(filters);
+  }, [filters.page, filters.pageSize, filters.categoria]);
+
+  return (
+    <AdminDashboard
+      admin={admin}
+      listResponse={listResponse}
+      eventos={eventos}
+      loading={loading}
+      error={error}
+      filters={filters}
+      onChangeFilters={(next) => {
+        setFilters(next);
+        if (next.search !== filters.search) {
+          loadData(next);
+        }
+      }}
+      onReload={() => loadData(filters)}
+      onOpenDetails={async (id) => {
+        try {
+          const [identity, eventsData] = await Promise.all([
+            getAdminCredenciadoById(id),
+            getAdminCredenciadoEventos(id)
+          ]);
+          setSelectedDetails(identity);
+          setSelectedEvents(eventsData);
+        } catch (detailError) {
+          setError(detailError.message || "Falha ao carregar detalhes.");
+        }
+      }}
+      selectedDetails={selectedDetails}
+      selectedEvents={selectedEvents}
+      onCloseDetails={() => {
+        setSelectedDetails(null);
+        setSelectedEvents([]);
+      }}
+      onCreateComissao={async (payload) => {
+        setCreatingComissao(true);
+        setCreateComissaoError("");
+        try {
+          await createAdminComissao(payload);
+          await loadData(filters);
+        } catch (createError) {
+          setCreateComissaoError(createError.message || "Erro ao criar membro.");
+          throw createError;
+        } finally {
+          setCreatingComissao(false);
+        }
+      }}
+      creatingComissao={creatingComissao}
+      createComissaoError={createComissaoError}
+      onLogout={onLogout}
+      auditLogs={auditLogs}
+      onRunCheckIn={async (payload) => {
+        setCheckInLoading(true);
+        setError("");
+        try {
+          const result = await validateAdminCheckIn(payload);
+          setCheckInResult(result);
+          await loadData(filters);
+        } catch (checkError) {
+          setError(checkError.message || "Falha no check-in.");
+        } finally {
+          setCheckInLoading(false);
+        }
+      }}
+      checkInResult={checkInResult}
+      checkInLoading={checkInLoading}
+      analyticsOverview={analyticsOverview}
+      analyticsFraud={analyticsFraud}
+    />
+  );
+}
+
+function AdminCredencialPage() {
+  const { id } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    getAdminCredencialById(id)
+      .then((response) => {
+        setData(response);
+      })
+      .catch((loadError) => {
+        setError(loadError.message || "Credencial nao encontrada.");
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  return <AdminCredencialView data={data} loading={loading} error={error} />;
+}
+
+function ProtectedAdminRoute({ admin, children }) {
+  if (!admin) {
+    return <Navigate to="/admin/login" replace />;
+  }
+  return children;
+}
+
+function App() {
+  const navigate = useNavigate();
+  const [admin, setAdmin] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    me()
+      .then((response) => {
+        setAdmin(response.admin);
+      })
+      .catch(() => {
+        setAdmin(null);
+      })
+      .finally(() => setCheckingAuth(false));
+  }, []);
+
+  if (checkingAuth) {
+    return <p className="loading-screen">Carregando...</p>;
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div>
+          <h1>Credenciamento - Setor Cafeeiro</h1>
+          <p>Checkpoint 2 - Publico + Admin + Check-in + QR/PDF + Analytics</p>
+        </div>
+        <nav className="tabs">
+          <NavLink to="/" end className={({ isActive }) => (isActive ? "tab active" : "tab")}>
+            Publico
+          </NavLink>
+          <NavLink
+            to={admin ? "/admin" : "/admin/login"}
+            className={({ isActive }) => (isActive ? "tab active" : "tab")}
+          >
+            Admin
+          </NavLink>
+        </nav>
+      </header>
+
+      <Routes>
+        <Route path="/" element={<PublicAreaPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage onLoggedIn={setAdmin} />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedAdminRoute admin={admin}>
+              <AdminDashboardPage
+                admin={admin}
+                onLogout={async () => {
+                  await logout();
+                  setAdmin(null);
+                  navigate("/admin/login");
+                }}
+              />
+            </ProtectedAdminRoute>
+          }
+        />
+        <Route
+          path="/admin/credenciais/:id"
+          element={
+            <ProtectedAdminRoute admin={admin}>
+              <AdminCredencialPage />
+            </ProtectedAdminRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
   );
 }
 

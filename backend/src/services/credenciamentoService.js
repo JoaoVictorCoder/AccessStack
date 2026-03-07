@@ -11,6 +11,7 @@ import {
   existsByCodigoUnico
 } from "../repositories/credencialRepository.js";
 import { createEventoSistema } from "../repositories/eventoSistemaRepository.js";
+import { createAuditLog } from "../repositories/auditLogRepository.js";
 
 async function generateUniqueCredentialCode(tx) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -32,7 +33,7 @@ function buildQrPayload({ credenciadoId, credentialCode }) {
   });
 }
 
-export async function createCredenciamento(identityPayload) {
+export async function createCredenciamento(identityPayload, actor = null) {
   return prisma.$transaction(async (tx) => {
     const createdCredenciado = await createCredenciado(
       {
@@ -80,6 +81,21 @@ export async function createCredenciamento(identityPayload) {
         metadata: {
           codigoUnico: credencial.codigoUnico,
           statusCredencial: credencial.statusCredencial
+        }
+      },
+      tx
+    );
+
+    await createAuditLog(
+      {
+        actorType: actor?.actorType || "SYSTEM",
+        actorId: actor?.actorId || null,
+        acao: "CREDENCIAMENTO_CRIADO",
+        recurso: "CREDENCIADO",
+        recursoId: createdCredenciado.id,
+        detalhes: {
+          categoria: createdCredenciado.categoria,
+          credencialId: credencial.id
         }
       },
       tx

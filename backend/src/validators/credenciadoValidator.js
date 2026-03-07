@@ -15,12 +15,20 @@ function toCleanString(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-export function validateCredenciadoPayload(payload) {
+export function validateCredenciadoPayload(payload, options = {}) {
+  const allowComissaoOrganizadora = options.allowComissaoOrganizadora === true;
   const errors = [];
   const categoria = toCleanString(payload.categoria);
 
   if (!categorias.has(categoria)) {
     errors.push("categoria invalida");
+  }
+
+  if (
+    categoria === Categoria.COMISSAO_ORGANIZADORA &&
+    !allowComissaoOrganizadora
+  ) {
+    errors.push("categoria COMISSAO_ORGANIZADORA nao permitida nesta rota");
   }
 
   for (const field of commonFields) {

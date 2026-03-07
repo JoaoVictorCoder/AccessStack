@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -117,6 +118,65 @@ async function main() {
       }
     }
   }
+
+  const adminEmail = (process.env.ADMIN_EMAIL || "admin@evento.com").toLowerCase();
+  const adminSenha = process.env.ADMIN_PASSWORD || "Admin@123";
+  const gateEmail = (process.env.GATE_EMAIL || "gate@evento.com").toLowerCase();
+  const gateSenha = process.env.GATE_PASSWORD || "Gate@123";
+
+  const [adminHash, gateHash] = await Promise.all([
+    bcrypt.hash(adminSenha, 10),
+    bcrypt.hash(gateSenha, 10)
+  ]);
+
+  await prisma.adminUser.upsert({
+    where: { email: adminEmail },
+    update: {
+      nome: "Administrador",
+      passwordHash: adminHash,
+      role: "ADMIN",
+      ativo: true
+    },
+    create: {
+      email: adminEmail,
+      nome: "Administrador",
+      passwordHash: adminHash,
+      role: "ADMIN",
+      ativo: true
+    }
+  });
+
+  await prisma.adminUser.upsert({
+    where: { email: gateEmail },
+    update: {
+      nome: "App Gate",
+      passwordHash: gateHash,
+      role: "APP_GATE",
+      ativo: true
+    },
+    create: {
+      email: gateEmail,
+      nome: "App Gate",
+      passwordHash: gateHash,
+      role: "APP_GATE",
+      ativo: true
+    }
+  });
+
+  await prisma.gateDevice.upsert({
+    where: { codigo: "GATE-ENTRADA-01" },
+    update: {
+      nome: "Catraca Entrada 01",
+      localizacao: "Portao Principal",
+      ativo: true
+    },
+    create: {
+      codigo: "GATE-ENTRADA-01",
+      nome: "Catraca Entrada 01",
+      localizacao: "Portao Principal",
+      ativo: true
+    }
+  });
 }
 
 main()

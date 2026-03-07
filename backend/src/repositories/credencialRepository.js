@@ -4,10 +4,24 @@ export async function createCredencial(data, tx = prisma) {
   return tx.credencial.create({ data });
 }
 
-export async function findCredencialById(id) {
-  return prisma.credencial.findUnique({
+export async function findCredencialById(id, tx = prisma) {
+  return tx.credencial.findUnique({
     where: { id },
     include: { credenciado: true }
+  });
+}
+
+export async function findCredencialByCodigoUnico(codigoUnico, tx = prisma) {
+  return tx.credencial.findUnique({
+    where: { codigoUnico },
+    include: { credenciado: true }
+  });
+}
+
+export async function updateCredencialStatus(id, statusCredencial, tx = prisma) {
+  return tx.credencial.update({
+    where: { id },
+    data: { statusCredencial }
   });
 }
 

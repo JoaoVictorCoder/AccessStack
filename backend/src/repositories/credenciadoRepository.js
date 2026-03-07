@@ -15,6 +15,36 @@ export async function listCredenciados() {
   });
 }
 
+export async function listCredenciadosPaginated({
+  search,
+  categoria,
+  page,
+  pageSize
+}) {
+  const where = {
+    categoria: categoria || undefined,
+    OR: search
+      ? [
+          { nomeCompleto: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } }
+        ]
+      : undefined
+  };
+
+  const [items, total] = await Promise.all([
+    prisma.credenciado.findMany({
+      where,
+      include: includeIdentity,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize
+    }),
+    prisma.credenciado.count({ where })
+  ]);
+
+  return { items, total };
+}
+
 export async function findCredenciadoById(id) {
   return prisma.credenciado.findUnique({
     where: { id },

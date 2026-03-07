@@ -38,6 +38,31 @@ enum TipoEventoSistema {
   ACESSO_NEGADO
 }
 
+enum AdminRole {
+  ADMIN
+  APP_GATE
+  SYSTEM
+}
+
+enum AccessResult {
+  ALLOW
+  DENY
+}
+
+enum AccessReason {
+  CREDENCIAL_INVALIDA
+  CREDENCIAL_BLOQUEADA
+  JA_UTILIZADA
+  FORA_DO_HORARIO
+  ACESSO_PERMITIDO
+}
+
+enum AuditActorType {
+  ADMIN_USER
+  APP_GATE
+  SYSTEM
+}
+
 model Credenciado {
   id                   String               @id @default(uuid()) @db.Uuid
   categoria            Categoria
@@ -64,6 +89,8 @@ model Credenciado {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([categoria, statusCredenciamento])
 }
 
 model Credencial {
@@ -75,6 +102,7 @@ model Credencial {
   emitidaEm       DateTime
 
   credenciado Credenciado @relation(fields: [credenciadoId], references: [id], onDelete: Cascade)
+  accessAttempts AccessAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -89,4 +117,66 @@ model EventoSistema {
   createdAt     DateTime         @default(now())
 
   credenciado Credenciado? @relation(fields: [credenciadoId], references: [id], onDelete: SetNull)
+
+  @@index([credenciadoId])
+  @@index([tipoEvento])
+  @@index([createdAt])
+}
+
+model AdminUser {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String
+  nome         String
+  role         AdminRole @default(ADMIN)
+  ativo        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  auditLogs    AuditLog[]
+}
+
+model AuditLog {
+  id         String         @id @default(uuid()) @db.Uuid
+  actorType  AuditActorType
+  actorId    String?        @db.Uuid
+  acao       String
+  recurso    String
+  recursoId  String?
+  detalhes   Json?
+  createdAt  DateTime       @default(now())
+
+  actor AdminUser? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorType, createdAt])
+  @@index([recurso, recursoId])
+}
+
+model GateDevice {
+  id          String   @id @default(uuid()) @db.Uuid
+  codigo      String   @unique
+  nome        String
+  localizacao String?
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  accessAttempts AccessAttempt[]
+}
+
+model AccessAttempt {
+  id           String       @id @default(uuid()) @db.Uuid
+  credencialId String?      @db.Uuid
+  gateDeviceId String?      @db.Uuid
+  accessPoint  String?
+  resultado    AccessResult
+  motivo       AccessReason
+  metadata     Json?
+  createdAt    DateTime     @default(now())
+
+  credencial Credencial? @relation(fields: [credencialId], references: [id], onDelete: SetNull)
+  gateDevice GateDevice? @relation(fields: [gateDeviceId], references: [id], onDelete: SetNull)
+
+  @@index([credencialId, createdAt])
+  @@index([resultado, motivo, createdAt])
 }

@@ -1,186 +1,174 @@
-# Checkpoint 1 - Base IAM para Credenciamento de Evento
+# Checkpoint 2 - Plataforma de Credenciamento (Publico + Admin)
 
-Refatoracao incremental do projeto original (sem recomeco do zero) para evoluir de cadastro simples para fundacao de identidade e acesso de eventos.
+Evolucao incremental sobre o projeto existente, sem recriar do zero.
 
-## O que mudou no dominio
+## O que foi implementado no Checkpoint 2
 
-Antes:
-- `Credenciado` apenas como cadastro de participante.
+- Separacao clara entre area publica e area administrativa.
+- Autenticacao com JWT em cookie HttpOnly e autorizacao por papeis.
+- Papeis: `ADMIN`, `APP_GATE`, `SYSTEM`.
+- DTOs separados para publico/admin/check-in/audit/fraude.
+- Geração de QR Code e PDF da credencial.
+- Fluxo de validacao de acesso/check-in com `ALLOW`/`DENY` e motivo.
+- Arquitetura pronta para integracao de catraca via `GateProvider` (mock).
+- Analytics simples e insights de fraude.
+- LGPD aplicada com minimizacao de dados.
 
-Agora:
-- `Credenciado` representa uma identidade do evento.
-- Cada identidade possui status de credenciamento.
-- Cada identidade possui uma `Credencial` digital vinculada.
-- Cada acao relevante gera `EventoSistema` para rastreabilidade.
-
-## Arquitetura atual (incremental)
+## Estrutura principal
 
 ```txt
-.
-|-- backend
-|   |-- prisma
-|   |   |-- migrations
-|   |   |   |-- 20260307120000_iam_foundation
-|   |   |   |   `-- migration.sql
-|   |   |   `-- migration_lock.toml
-|   |   |-- schema.prisma
-|   |   `-- seed.js
-|   |-- src
-|   |   |-- controllers
-|   |   |   |-- credenciadoController.js
-|   |   |   |-- credencialController.js
-|   |   |   `-- eventoSistemaController.js
-|   |   |-- domain
-|   |   |   `-- enums.js
-|   |   |-- middlewares
-|   |   |   `-- asyncHandler.js
-|   |   |-- repositories
-|   |   |   |-- credenciadoRepository.js
-|   |   |   |-- credencialRepository.js
-|   |   |   `-- eventoSistemaRepository.js
-|   |   |-- routes
-|   |   |   `-- index.js
-|   |   |-- services
-|   |   |   `-- credenciamentoService.js
-|   |   |-- utils
-|   |   |   `-- codeGenerator.js
-|   |   |-- validators
-|   |   |   `-- credenciadoValidator.js
-|   |   |-- app.js
-|   |   |-- prisma.js
-|   |   `-- server.js
-|   |-- Dockerfile
-|   |-- package.json
-|   `-- start.sh
-|-- frontend
-|   |-- src
-|   |   |-- App.jsx
-|   |   |-- main.jsx
-|   |   `-- styles.css
-|   |-- Dockerfile
-|   |-- index.html
-|   |-- package.json
-|   `-- vite.config.js
-|-- docker-compose.yml
-`-- README.md
+backend/
+  prisma/
+    schema.prisma
+    seed.js
+    migrations/
+      20260307120000_iam_foundation/
+      20260307123000_add_observability_indexes/
+      20260307140000_add_admin_user/
+      20260308100000_checkpoint2_security_access/
+  src/
+    config/
+    controllers/
+    domain/
+    middlewares/
+    mappers/
+    providers/
+      gate/
+      pdf/
+      qrcode/
+    repositories/
+    routes/
+    services/
+    validators/
+frontend/
+  src/
+    api/
+    components/
+    constants/
+    App.jsx
 ```
 
-## Modelo de dados (Prisma)
+## Modelos atuais (Prisma)
 
-Entidades:
 - `Credenciado`
 - `Credencial`
 - `EventoSistema`
+- `AdminUser`
+- `AuditLog`
+- `GateDevice`
+- `AccessAttempt`
 
-Enums:
+## Enums/status
+
 - `Categoria`
 - `StatusCredenciamento`: `CADASTRADO`, `APROVADO`, `BLOQUEADO`, `CHECKED_IN`
 - `StatusCredencial`: `GERADA`, `ATIVA`, `INATIVA`, `UTILIZADA`
 - `TipoEventoSistema`: `CREDENCIAMENTO_CRIADO`, `CREDENCIAL_GERADA`, `DADOS_ATUALIZADOS`, `ACESSO_VALIDADO`, `ACESSO_NEGADO`
+- `AdminRole`: `ADMIN`, `APP_GATE`, `SYSTEM`
+- `AccessResult`: `ALLOW`, `DENY`
+- `AccessReason`: `CREDENCIAL_INVALIDA`, `CREDENCIAL_BLOQUEADA`, `JA_UTILIZADA`, `FORA_DO_HORARIO`, `ACESSO_PERMITIDO`
+- `AuditActorType`: `ADMIN_USER`, `APP_GATE`, `SYSTEM`
 
-Relacoes:
-- `Credenciado` 1:1 `Credencial`
-- `Credenciado` 1:N `EventoSistema`
+## Rotas
 
-## Regras de negocio implementadas
-
-No `POST /credenciados`:
-1. valida categoria + campos comuns + campos dinamicos.
-2. cria `Credenciado` com `statusCredenciamento = CADASTRADO`.
-3. cria `Credencial` automatica com:
-   - `codigoUnico`
-   - `qrCodePayload` (payload pronto para checkpoint de QR)
-   - `statusCredencial = GERADA`
-4. registra eventos:
-   - `CREDENCIAMENTO_CRIADO`
-   - `CREDENCIAL_GERADA`
-
-Tudo em transacao Prisma.
-
-## API
-
-Mantidas:
+Publicas:
 - `POST /credenciados`
-- `GET /credenciados`
-- `GET /credenciados/:id`
+- `GET /credenciados/:id/status`
+- `GET /credenciais/:id/pdf`
+- `GET /credenciais/:id/qrcode`
+- `GET /health`
 
-Novas:
-- `GET /credenciais/:id`
-- `GET /eventos`
-- `GET /credenciados/:id/eventos`
+Auth:
+- `POST /auth/login`
+- `POST /auth/logout`
+- `GET /auth/me`
 
-Observacao:
-- `GET /credenciados` e `GET /credenciados/:id` retornam dados essenciais da credencial vinculada (`include`).
+Admin protegidas:
+- `GET /admin/credenciados`
+- `GET /admin/credenciados/:id`
+- `GET /admin/credenciados/:id/eventos`
+- `POST /admin/credenciados/comissao-organizadora`
+- `GET /admin/eventos`
+- `GET /admin/audit-logs`
+- `POST /admin/check-in/validate`
+- `GET /admin/analytics/overview`
+- `GET /admin/analytics/fraud`
+- `GET /admin/credenciais/:id`
 
-## Frontend
+## LGPD (aplicado)
 
-Mantido:
-- tela unica de cadastro/listagem.
-- seletor de categoria.
-- campos dinamicos por categoria.
+- Cadastro publico exige `aceitouLgpd = true`.
+- Texto explicito de consentimento no formulario publico.
+- Dados minimizados em respostas publicas.
+- Listagens administrativas protegidas por autenticacao/role.
+- CPF mascarado em listagens administrativas.
+- Dados completos apenas em detalhes administrativos.
+- Trilhas de auditoria para acoes administrativas e check-in.
+- Estrutura preparada para retencao/anonimizacao futura.
 
-Evoluido:
-- apos cadastro, mostra status do credenciamento e codigo da credencial.
-- listagem exibe:
-  - nome
-  - categoria
-  - status
-  - codigo da credencial
-- detalhe mostra:
-  - dados completos do credenciado + credencial
-  - historico basico de eventos (`/credenciados/:id/eventos`)
+## Credenciais seed
 
-## Como rodar (Docker)
+Admin:
+- Email: `admin@evento.com`
+- Senha: `Admin@123`
+- Role: `ADMIN`
+
+Gate app:
+- Email: `gate@evento.com`
+- Senha: `Gate@123`
+- Role: `APP_GATE`
+
+## Como rodar local
+
+Backend:
+
+```bash
+cd backend
+cp .env.example .env
+npm install
+npm run prisma:generate
+npm run prisma:migrate:dev -- --name checkpoint2
+npm run seed
+npm run dev
+```
+
+Frontend:
+
+```bash
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+
+## Como rodar com Docker
 
 ```bash
 docker compose up --build
 ```
 
-Acessos:
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:3001`
-- Health: `http://localhost:3001/health`
 
-## Como rodar migrations
+## Como testar (roteiro rapido)
 
-Com Docker (backend container):
-- startup usa `prisma db push` para compatibilidade rapida de hackathon.
-- migrations versionadas estao em `backend/prisma/migrations`.
-- para aplicar migrations estritas no ambiente local, use os comandos abaixo.
+1. Cadastro publico em `/`.
+2. Consulte status usando `GET /credenciados/:id/status`.
+3. Abra PDF da credencial: `GET /credenciais/:id/pdf`.
+4. Visualize QR: `GET /credenciais/:id/qrcode`.
+5. Login admin em `/admin/login`.
+6. No painel admin:
+   - lista/busca/filtro de credenciados
+   - detalhes de credenciado
+   - eventos e audit logs
+   - check-in via codigo unico (retorno ALLOW/DENY)
+   - analytics overview e fraude
+7. Consulte credencial interna em `/admin/credenciais/:id`.
 
-Local (sem Docker):
+## Pendencias/limitacoes atuais
 
-```bash
-cd backend
-npm install
-npm run prisma:generate
-npm run prisma:migrate:dev -- --name iam_incremental_base
-npm run seed
-npm run dev
-```
-
-## Fluxo de teste rapido
-
-1. Abra o frontend em `http://localhost:5173`.
-2. Cadastre um participante (qualquer categoria).
-3. Verifique mensagem de sucesso com:
-   - status do credenciamento
-   - codigo da credencial
-4. Na lista, clique no registro criado.
-5. Confira nos detalhes:
-   - objeto da credencial vinculada
-   - historico de eventos.
-6. Opcional API:
-   - `GET /eventos`
-   - `GET /credenciais/:id`
-
-## Restricoes respeitadas neste checkpoint
-
-Nao implementado ainda:
-- leitura de QR por camera
-- autenticacao complexa
-- dashboard analitico completo
-- data lake real
-- IA conversacional pronta
-
-Mas a base ficou preparada para evolucao nesses pontos.
+- Gate provider real ainda nao implementado (apenas mock).
+- Regras de fraude ainda sao heuristicas simples.
+- Sem biometria/hardware real.
+- Sem politica automatica de retencao/anonimizacao.
+- Sem testes automatizados de integracao.

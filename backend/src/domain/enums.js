@@ -29,6 +29,31 @@ export const TipoEventoSistema = Object.freeze({
   ACESSO_NEGADO: "ACESSO_NEGADO"
 });
 
+export const AdminRole = Object.freeze({
+  ADMIN: "ADMIN",
+  APP_GATE: "APP_GATE",
+  SYSTEM: "SYSTEM"
+});
+
+export const AccessResult = Object.freeze({
+  ALLOW: "ALLOW",
+  DENY: "DENY"
+});
+
+export const AccessReason = Object.freeze({
+  CREDENCIAL_INVALIDA: "CREDENCIAL_INVALIDA",
+  CREDENCIAL_BLOQUEADA: "CREDENCIAL_BLOQUEADA",
+  JA_UTILIZADA: "JA_UTILIZADA",
+  FORA_DO_HORARIO: "FORA_DO_HORARIO",
+  ACESSO_PERMITIDO: "ACESSO_PERMITIDO"
+});
+
+export const AuditActorType = Object.freeze({
+  ADMIN_USER: "ADMIN_USER",
+  APP_GATE: "APP_GATE",
+  SYSTEM: "SYSTEM"
+});
+
 export const CategoriaCamposObrigatorios = Object.freeze({
   [Categoria.EXPOSITOR]: ["cnpj", "siteEmpresa", "nomeEmpresa"],
   [Categoria.CAFEICULTOR]: ["ccir", "nomePropriedade"],

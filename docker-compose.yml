@@ -23,6 +23,15 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/credenciamento?schema=public
       PORT: 3001
+      JWT_SECRET: hackathon-secret-local
+      JWT_EXPIRES_IN: 8h
+      CORS_ORIGINS: http://localhost:5173
+      ADMIN_EMAIL: admin@evento.com
+      ADMIN_PASSWORD: Admin@123
+      GATE_EMAIL: gate@evento.com
+      GATE_PASSWORD: Gate@123
+      GATE_START_HOUR: 0
+      GATE_END_HOUR: 23
     depends_on:
       db:
         condition: service_healthy
