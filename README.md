@@ -1,73 +1,142 @@
-# Base de projeto: Frontend HTML + Backend Python
+# Checkpoint 1 - Credenciamento Setor Cafeeiro
 
-Estrutura criada:
+Sistema web full stack para cadastro e consulta de credenciados em evento do setor cafeeiro.
 
+Stack:
+- React + Vite
+- Node.js + Express
+- PostgreSQL
+- Prisma
+- Docker Compose
+
+## Estrutura
+
+```txt
+.
+|-- backend
+|   |-- prisma
+|   |   |-- schema.prisma
+|   |   `-- seed.js
+|   |-- src
+|   |   |-- app.js
+|   |   |-- prisma.js
+|   |   |-- server.js
+|   |   `-- validation.js
+|   |-- Dockerfile
+|   |-- package.json
+|   `-- start.sh
+|-- frontend
+|   |-- src
+|   |   |-- App.jsx
+|   |   |-- main.jsx
+|   |   `-- styles.css
+|   |-- Dockerfile
+|   |-- index.html
+|   |-- package.json
+|   `-- vite.config.js
+`-- docker-compose.yml
 ```
-frontend/
-  index.html
-  styles.css
-  app.js
-backend/
-  app.py
-  requirements.txt
-.gitignore
+
+## Categorias suportadas
+
+- Expositor: `cnpj`, `siteEmpresa`, `nomeEmpresa`
+- Cafeicultor: `ccir`, `nomePropriedade`
+- Visitante: sem campos extras
+- Imprensa: `cnpj`, `nomeVeiculo`, `siteEmpresa`
+- Comissao Organizadora: `funcaoCargo`
+- Colaborador Terceirizado: `cnpj`, `nomeEmpresa`, `funcaoCargo`
+
+Campos comuns:
+- `id` UUID (gerado no backend)
+- `nomeCompleto`
+- `cpf`
+- `rg`
+- `celular`
+- `email`
+- `municipio`
+- `uf`
+- `aceitouLgpd`
+
+## API
+
+- `POST /credenciados`
+- `GET /credenciados`
+- `GET /credenciados/:id`
+
+Healthcheck:
+- `GET /health`
+
+## Rodando com Docker Compose (recomendado)
+
+Na raiz do projeto:
+
+```bash
+docker compose up --build
 ```
 
-## 1) Backend (Python + Flask)
+URLs:
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3001`
+- PostgreSQL: `localhost:5432`
 
-No terminal:
+Credenciais do banco (docker):
+- Database: `credenciamento`
+- User: `postgres`
+- Password: `postgres`
+
+## Rodando local sem Docker
+
+Pre-requisitos:
+- Node 20+
+- PostgreSQL rodando local
+
+### 1) Backend
 
 ```bash
 cd backend
-python -m venv .venv
+cp .env.example .env
+npm install
+npm run prisma:generate
+npx prisma db push
+npm run seed
+npm run dev
 ```
 
-Ative o ambiente virtual:
-
-- Windows (PowerShell):
-
-```bash
-.venv\Scripts\Activate.ps1
-```
-
-Instale dependencias e rode:
-
-```bash
-pip install -r requirements.txt
-python app.py
-```
-
-Backend em: `http://127.0.0.1:5000`
-
-### Banco SQL
-
-O backend usa SQLite via SQLAlchemy.
-
-- Arquivo do banco: `backend/instance/app.db` (criado automaticamente ao iniciar o backend)
-- Tabela inicial: `tasks`
-
-## 2) Frontend (HTML/CSS/JS)
+### 2) Frontend
 
 Em outro terminal:
 
 ```bash
 cd frontend
-python -m http.server 5500
+cp .env.example .env
+npm install
+npm run dev
 ```
 
-Frontend em: `http://127.0.0.1:5500`
+## Exemplo de payload
 
-## Endpoints iniciais
-
-- `GET /api/health`
-- `GET /api/message`
-- `GET /api/tasks`
-- `POST /api/tasks`
-
-Exemplo de criacao de task:
-
-```bash
-curl -X POST http://127.0.0.1:5000/api/tasks \
-  -H "Content-Type: application/json" \
-  -d "{\"title\":\"Primeira task\"}"
+```json
+{
+  "categoria": "EXPOSITOR",
+  "nomeCompleto": "Joao da Silva",
+  "cpf": "12345678900",
+  "rg": "1234567",
+  "celular": "11999999999",
+  "email": "joao@empresa.com",
+  "municipio": "Ribeirao Preto",
+  "uf": "SP",
+  "aceitouLgpd": true,
+  "cnpj": "12345678000199",
+  "siteEmpresa": "https://empresa.com",
+  "nomeEmpresa": "Cafe Forte"
+}
 ```
+
+## Dados de teste
+
+O seed cria 3 registros iniciais:
+- 1 Expositor
+- 1 Cafeicultor
+- 1 Visitante
+
+Arquivo: `backend/prisma/seed.js`.

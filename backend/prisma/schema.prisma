@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Categoria {
+  EXPOSITOR
+  CAFEICULTOR
+  VISITANTE
+  IMPRENSA
+  COMISSAO_ORGANIZADORA
+  COLABORADOR_TERCEIRIZADO
+}
+
+model Credenciado {
+  id            String    @id @default(uuid()) @db.Uuid
+  categoria     Categoria
+  nomeCompleto  String
+  cpf           String    @unique
+  rg            String
+  celular       String
+  email         String    @unique
+  municipio     String
+  uf            String
+  aceitouLgpd   Boolean
+
+  cnpj            String?
+  siteEmpresa     String?
+  nomeEmpresa     String?
+  ccir            String?
+  nomePropriedade String?
+  nomeVeiculo     String?
+  funcaoCargo     String?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
