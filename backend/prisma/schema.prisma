@@ -16,17 +16,40 @@ enum Categoria {
   COLABORADOR_TERCEIRIZADO
 }
 
+enum StatusCredenciamento {
+  CADASTRADO
+  APROVADO
+  BLOQUEADO
+  CHECKED_IN
+}
+
+enum StatusCredencial {
+  GERADA
+  ATIVA
+  INATIVA
+  UTILIZADA
+}
+
+enum TipoEventoSistema {
+  CREDENCIAMENTO_CRIADO
+  CREDENCIAL_GERADA
+  DADOS_ATUALIZADOS
+  ACESSO_VALIDADO
+  ACESSO_NEGADO
+}
+
 model Credenciado {
-  id            String    @id @default(uuid()) @db.Uuid
-  categoria     Categoria
-  nomeCompleto  String
-  cpf           String    @unique
-  rg            String
-  celular       String
-  email         String    @unique
-  municipio     String
-  uf            String
-  aceitouLgpd   Boolean
+  id                   String               @id @default(uuid()) @db.Uuid
+  categoria            Categoria
+  statusCredenciamento StatusCredenciamento @default(CADASTRADO)
+  nomeCompleto         String
+  cpf                  String               @unique
+  rg                   String
+  celular              String
+  email                String               @unique
+  municipio            String
+  uf                   String
+  aceitouLgpd          Boolean
 
   cnpj            String?
   siteEmpresa     String?
@@ -36,6 +59,34 @@ model Credenciado {
   nomeVeiculo     String?
   funcaoCargo     String?
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  credencial Credencial?
+  eventos    EventoSistema[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Credencial {
+  id              String           @id @default(uuid()) @db.Uuid
+  credenciadoId   String           @unique @db.Uuid
+  codigoUnico     String           @unique
+  qrCodePayload   String
+  statusCredencial StatusCredencial @default(GERADA)
+  emitidaEm       DateTime
+
+  credenciado Credenciado @relation(fields: [credenciadoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EventoSistema {
+  id            String           @id @default(uuid()) @db.Uuid
+  credenciadoId String?          @db.Uuid
+  tipoEvento    TipoEventoSistema
+  descricao     String
+  metadata      Json?
+  createdAt     DateTime         @default(now())
+
+  credenciado Credenciado? @relation(fields: [credenciadoId], references: [id], onDelete: SetNull)
 }

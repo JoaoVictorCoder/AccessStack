@@ -60,7 +60,9 @@ function App() {
   const [form, setForm] = useState(baseForm);
   const [list, setList] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [selectedEvents, setSelectedEvents] = useState([]);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
 
   const extraFields = useMemo(
@@ -77,7 +79,19 @@ function App() {
   async function loadCredenciado(id) {
     const response = await fetch(`${API_URL}/credenciados/${id}`);
     const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Falha ao carregar credenciado.");
+    }
     setSelected(data);
+  }
+
+  async function loadCredenciadoEventos(id) {
+    const response = await fetch(`${API_URL}/credenciados/${id}/eventos`);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Falha ao carregar eventos.");
+    }
+    setSelectedEvents(data);
   }
 
   useEffect(() => {
@@ -112,11 +126,17 @@ function App() {
         throw new Error(data.error || (data.errors || []).join(", "));
       }
 
+      setSuccess(
+        `Credenciamento criado. Status: ${data.statusCredenciamento}. Credencial: ${data.credencial?.codigoUnico || "N/A"}`
+      );
+
       setForm((prev) => ({
         ...baseForm,
         categoria: prev.categoria
       }));
       await loadCredenciados();
+      await loadCredenciado(data.id);
+      await loadCredenciadoEventos(data.id);
     } catch (submitError) {
       setError(submitError.message || "Erro ao cadastrar.");
     } finally {
@@ -128,7 +148,7 @@ function App() {
     <main className="page">
       <section className="card">
         <h1>Credenciamento - Setor Cafeeiro</h1>
-        <p>Checkpoint 1 - Cadastro de participantes</p>
+        <p>Checkpoint 1 - Base IAM para identidade e acesso em eventos</p>
 
         <form onSubmit={onSubmit} className="grid">
           <label>
@@ -192,22 +212,42 @@ function App() {
         </form>
 
         {error && <p className="error">{error}</p>}
+        {success && <p className="success">{success}</p>}
       </section>
 
       <section className="card">
-        <h2>Credenciados</h2>
+        <h2>Identidades Credenciadas</h2>
         <ul className="list">
           {list.map((item) => (
             <li key={item.id}>
-              <button type="button" onClick={() => loadCredenciado(item.id)}>
-                {item.nomeCompleto} - {item.categoria}
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    setError("");
+                    await loadCredenciado(item.id);
+                    await loadCredenciadoEventos(item.id);
+                  } catch (loadError) {
+                    setError(loadError.message);
+                  }
+                }}
+              >
+                <strong>{item.nomeCompleto}</strong>
+                <span>
+                  {item.categoria} | {item.statusCredenciamento}
+                </span>
+                <span>Credencial: {item.credencial?.codigoUnico || "N/A"}</span>
               </button>
             </li>
           ))}
         </ul>
 
+        {selected && <h3>Detalhes da Identidade</h3>}
+        {selected && <pre className="details">{JSON.stringify(selected, null, 2)}</pre>}
+
+        {selected && <h3>Historico de Eventos</h3>}
         {selected && (
-          <pre className="details">{JSON.stringify(selected, null, 2)}</pre>
+          <pre className="details">{JSON.stringify(selectedEvents, null, 2)}</pre>
         )}
       </section>
     </main>

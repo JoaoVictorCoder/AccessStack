@@ -6,6 +6,7 @@ dist/
 backend/node_modules/
 frontend/node_modules/
 postgres_data/
+backend/instance/
 
 .DS_Store
 Thumbs.db

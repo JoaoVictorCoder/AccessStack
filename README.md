@@ -1,27 +1,54 @@
-# Checkpoint 1 - Credenciamento Setor Cafeeiro
+# Checkpoint 1 - Base IAM para Credenciamento de Evento
 
-Sistema web full stack para cadastro e consulta de credenciados em evento do setor cafeeiro.
+Refatoracao incremental do projeto original (sem recomeco do zero) para evoluir de cadastro simples para fundacao de identidade e acesso de eventos.
 
-Stack:
-- React + Vite
-- Node.js + Express
-- PostgreSQL
-- Prisma
-- Docker Compose
+## O que mudou no dominio
 
-## Estrutura
+Antes:
+- `Credenciado` apenas como cadastro de participante.
+
+Agora:
+- `Credenciado` representa uma identidade do evento.
+- Cada identidade possui status de credenciamento.
+- Cada identidade possui uma `Credencial` digital vinculada.
+- Cada acao relevante gera `EventoSistema` para rastreabilidade.
+
+## Arquitetura atual (incremental)
 
 ```txt
 .
 |-- backend
 |   |-- prisma
+|   |   |-- migrations
+|   |   |   |-- 20260307120000_iam_foundation
+|   |   |   |   `-- migration.sql
+|   |   |   `-- migration_lock.toml
 |   |   |-- schema.prisma
 |   |   `-- seed.js
 |   |-- src
+|   |   |-- controllers
+|   |   |   |-- credenciadoController.js
+|   |   |   |-- credencialController.js
+|   |   |   `-- eventoSistemaController.js
+|   |   |-- domain
+|   |   |   `-- enums.js
+|   |   |-- middlewares
+|   |   |   `-- asyncHandler.js
+|   |   |-- repositories
+|   |   |   |-- credenciadoRepository.js
+|   |   |   |-- credencialRepository.js
+|   |   |   `-- eventoSistemaRepository.js
+|   |   |-- routes
+|   |   |   `-- index.js
+|   |   |-- services
+|   |   |   `-- credenciamentoService.js
+|   |   |-- utils
+|   |   |   `-- codeGenerator.js
+|   |   |-- validators
+|   |   |   `-- credenciadoValidator.js
 |   |   |-- app.js
 |   |   |-- prisma.js
-|   |   |-- server.js
-|   |   `-- validation.js
+|   |   `-- server.js
 |   |-- Dockerfile
 |   |-- package.json
 |   `-- start.sh
@@ -34,109 +61,126 @@ Stack:
 |   |-- index.html
 |   |-- package.json
 |   `-- vite.config.js
-`-- docker-compose.yml
+|-- docker-compose.yml
+`-- README.md
 ```
 
-## Categorias suportadas
+## Modelo de dados (Prisma)
 
-- Expositor: `cnpj`, `siteEmpresa`, `nomeEmpresa`
-- Cafeicultor: `ccir`, `nomePropriedade`
-- Visitante: sem campos extras
-- Imprensa: `cnpj`, `nomeVeiculo`, `siteEmpresa`
-- Comissao Organizadora: `funcaoCargo`
-- Colaborador Terceirizado: `cnpj`, `nomeEmpresa`, `funcaoCargo`
+Entidades:
+- `Credenciado`
+- `Credencial`
+- `EventoSistema`
 
-Campos comuns:
-- `id` UUID (gerado no backend)
-- `nomeCompleto`
-- `cpf`
-- `rg`
-- `celular`
-- `email`
-- `municipio`
-- `uf`
-- `aceitouLgpd`
+Enums:
+- `Categoria`
+- `StatusCredenciamento`: `CADASTRADO`, `APROVADO`, `BLOQUEADO`, `CHECKED_IN`
+- `StatusCredencial`: `GERADA`, `ATIVA`, `INATIVA`, `UTILIZADA`
+- `TipoEventoSistema`: `CREDENCIAMENTO_CRIADO`, `CREDENCIAL_GERADA`, `DADOS_ATUALIZADOS`, `ACESSO_VALIDADO`, `ACESSO_NEGADO`
+
+Relacoes:
+- `Credenciado` 1:1 `Credencial`
+- `Credenciado` 1:N `EventoSistema`
+
+## Regras de negocio implementadas
+
+No `POST /credenciados`:
+1. valida categoria + campos comuns + campos dinamicos.
+2. cria `Credenciado` com `statusCredenciamento = CADASTRADO`.
+3. cria `Credencial` automatica com:
+   - `codigoUnico`
+   - `qrCodePayload` (payload pronto para checkpoint de QR)
+   - `statusCredencial = GERADA`
+4. registra eventos:
+   - `CREDENCIAMENTO_CRIADO`
+   - `CREDENCIAL_GERADA`
+
+Tudo em transacao Prisma.
 
 ## API
 
+Mantidas:
 - `POST /credenciados`
 - `GET /credenciados`
 - `GET /credenciados/:id`
 
-Healthcheck:
-- `GET /health`
+Novas:
+- `GET /credenciais/:id`
+- `GET /eventos`
+- `GET /credenciados/:id/eventos`
 
-## Rodando com Docker Compose (recomendado)
+Observacao:
+- `GET /credenciados` e `GET /credenciados/:id` retornam dados essenciais da credencial vinculada (`include`).
 
-Na raiz do projeto:
+## Frontend
+
+Mantido:
+- tela unica de cadastro/listagem.
+- seletor de categoria.
+- campos dinamicos por categoria.
+
+Evoluido:
+- apos cadastro, mostra status do credenciamento e codigo da credencial.
+- listagem exibe:
+  - nome
+  - categoria
+  - status
+  - codigo da credencial
+- detalhe mostra:
+  - dados completos do credenciado + credencial
+  - historico basico de eventos (`/credenciados/:id/eventos`)
+
+## Como rodar (Docker)
 
 ```bash
 docker compose up --build
 ```
 
-URLs:
+Acessos:
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:3001`
-- PostgreSQL: `localhost:5432`
+- Health: `http://localhost:3001/health`
 
-Credenciais do banco (docker):
-- Database: `credenciamento`
-- User: `postgres`
-- Password: `postgres`
+## Como rodar migrations
 
-## Rodando local sem Docker
+Com Docker (backend container):
+- startup usa `prisma db push` para compatibilidade rapida de hackathon.
+- migrations versionadas estao em `backend/prisma/migrations`.
+- para aplicar migrations estritas no ambiente local, use os comandos abaixo.
 
-Pre-requisitos:
-- Node 20+
-- PostgreSQL rodando local
-
-### 1) Backend
+Local (sem Docker):
 
 ```bash
 cd backend
-cp .env.example .env
 npm install
 npm run prisma:generate
-npx prisma db push
+npm run prisma:migrate:dev -- --name iam_incremental_base
 npm run seed
 npm run dev
 ```
 
-### 2) Frontend
+## Fluxo de teste rapido
 
-Em outro terminal:
+1. Abra o frontend em `http://localhost:5173`.
+2. Cadastre um participante (qualquer categoria).
+3. Verifique mensagem de sucesso com:
+   - status do credenciamento
+   - codigo da credencial
+4. Na lista, clique no registro criado.
+5. Confira nos detalhes:
+   - objeto da credencial vinculada
+   - historico de eventos.
+6. Opcional API:
+   - `GET /eventos`
+   - `GET /credenciais/:id`
 
-```bash
-cd frontend
-cp .env.example .env
-npm install
-npm run dev
-```
+## Restricoes respeitadas neste checkpoint
 
-## Exemplo de payload
+Nao implementado ainda:
+- leitura de QR por camera
+- autenticacao complexa
+- dashboard analitico completo
+- data lake real
+- IA conversacional pronta
 
-```json
-{
-  "categoria": "EXPOSITOR",
-  "nomeCompleto": "Joao da Silva",
-  "cpf": "12345678900",
-  "rg": "1234567",
-  "celular": "11999999999",
-  "email": "joao@empresa.com",
-  "municipio": "Ribeirao Preto",
-  "uf": "SP",
-  "aceitouLgpd": true,
-  "cnpj": "12345678000199",
-  "siteEmpresa": "https://empresa.com",
-  "nomeEmpresa": "Cafe Forte"
-}
-```
-
-## Dados de teste
-
-O seed cria 3 registros iniciais:
-- 1 Expositor
-- 1 Cafeicultor
-- 1 Visitante
-
-Arquivo: `backend/prisma/seed.js`.
+Mas a base ficou preparada para evolucao nesses pontos.
