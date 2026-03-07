@@ -41,7 +41,6 @@ export default function OperatorConsole({ operator, onValidate, history, loading
   const [scanStatus, setScanStatus] = useState("idle");
   const videoRef = useRef(null);
   const streamRef = useRef(null);
-  const scanTimerRef = useRef(null);
   const rafRef = useRef(null);
   const detectorRef = useRef(null);
   const canvasRef = useRef(null);
@@ -52,10 +51,6 @@ export default function OperatorConsole({ operator, onValidate, history, loading
   const canUseCamera = operator?.permissoesCustomizadas?.podeUsarCameraParaLeituraQR !== false;
 
   function stopCamera() {
-    if (scanTimerRef.current) {
-      window.clearInterval(scanTimerRef.current);
-      scanTimerRef.current = null;
-    }
     if (rafRef.current) {
       window.cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -69,6 +64,47 @@ export default function OperatorConsole({ operator, onValidate, history, loading
     }
     setCameraActive(false);
     setScanStatus("idle");
+  }
+
+  async function openVideoWithFallback() {
+    const candidates = [
+      {
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      },
+      {
+        video: {
+          facingMode: { ideal: "user" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      },
+      { video: true, audio: false }
+    ];
+
+    let lastError = null;
+    for (const constraints of candidates) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (!videoRef.current) return stream;
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        await new Promise((resolve) => window.setTimeout(resolve, 180));
+
+        if ((videoRef.current.videoWidth || 0) > 0 && (videoRef.current.videoHeight || 0) > 0) {
+          return stream;
+        }
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError || new Error("camera_unavailable");
   }
 
   async function validateByCode(rawText) {
@@ -115,19 +151,8 @@ export default function OperatorConsole({ operator, onValidate, history, loading
       } else {
         detectorRef.current = null;
       }
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      });
+      const stream = await openVideoWithFallback();
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
       setCameraActive(true);
       setScanStatus("scanning");
 
@@ -214,7 +239,7 @@ export default function OperatorConsole({ operator, onValidate, history, loading
 
         {cameraActive && (
           <div className="operator-camera-wrap">
-            <video ref={videoRef} className="operator-camera" muted playsInline />
+            <video ref={videoRef} className="operator-camera" muted playsInline autoPlay />
           </div>
         )}
         {cameraError && <p className="error">{cameraError}</p>}
