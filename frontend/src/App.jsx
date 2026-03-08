@@ -51,6 +51,13 @@ import {
   validatePublicCredenciadoForm
 } from "./utils/validation";
 
+// A tela principal concentra as tres jornadas do sistema:
+// 1. publico: cadastro e emissao da credencial;
+// 2. admin: operacao, auditoria e manutencao da base;
+// 3. operador: validacao rapida de QR no ponto de entrada.
+//
+// Ao alterar fluxos, preserve o contrato com `frontend/src/api/credenciamentoApi.js`.
+// Mudancas de nome de campo, filtros ou papeis exigem ajuste coordenado no backend.
 function PublicAreaPage() {
   const [form, setForm] = useState(baseForm);
   const [saving, setSaving] = useState(false);
@@ -61,6 +68,9 @@ function PublicAreaPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [touched, setTouched] = useState({});
 
+  // Centraliza mascaras e automacoes derivadas do formulario publico.
+  // Se um novo campo depender de outro valor, o ajuste deve entrar aqui
+  // para manter a interface e a validacao sincronizadas.
   function onChange(event) {
     const { name, value, type, checked } = event.target;
     const nextValue = (() => {
@@ -313,6 +323,14 @@ function AdminDashboardPage({ admin, onLogout }) {
   });
   const [standReport, setStandReport] = useState([]);
 
+  // `loadData` eh o ponto de orquestracao mais sensivel do painel admin.
+  // A carga muda de acordo com o papel autenticado:
+  // - COMISSAO_ORGANIZADORA: ve operacao filtrada e gestao restrita;
+  // - MASTER_ADMIN: recebe o conjunto completo, incluindo backup;
+  // - demais perfis admin: foco no ciclo de credenciamento.
+  //
+  // Se novos cards ou widgets precisarem de dados, prefira encaixar a chamada
+  // aqui para manter um unico fluxo de refresh apos operacoes CRUD.
   async function loadData(activeFilters = filters) {
     setLoading(true);
     setError("");
@@ -874,6 +892,10 @@ function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const isOperatorSession = Boolean(operator) && !admin;
 
+  // A sessao eh resolvida no boot para decidir qual navbar e quais rotas
+  // protegidas devem ser exibidas. O backend retorna `admin` tanto para
+  // perfis administrativos quanto para operador QR; a separacao final acontece
+  // aqui pelo campo `role`.
   useEffect(() => {
     me()
       .then((response) => {

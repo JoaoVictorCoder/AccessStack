@@ -1,5 +1,8 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
+// Todos os consumidores do frontend passam por este arquivo.
+// Ao adicionar, remover ou renomear endpoints, atualize primeiro este contrato
+// e depois os componentes que o utilizam. Isso evita fetches espalhados na UI.
 async function parseResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   const data = contentType.includes("application/json")
@@ -22,6 +25,8 @@ function adminFetch(path, options = {}) {
   });
 }
 
+// Fluxo publico: nao usa cookie de sessao e deve continuar minimizado para
+// nao expor detalhes administrativos na interface aberta.
 export async function createCredenciadoPublic(payload) {
   const response = await fetch(`${API_URL}/credenciados`, {
     method: "POST",
@@ -61,6 +66,8 @@ export async function logout() {
   return parseResponse(response);
 }
 
+// Fluxos administrativos: qualquer mudanca nos filtros precisa ser refletida
+// no backend para manter consistencia entre query string e DTO esperado.
 export async function getAdminCredenciados({ page = 1, pageSize = 10, search = "", categoria = "" }) {
   const params = new URLSearchParams();
   params.set("page", String(page));

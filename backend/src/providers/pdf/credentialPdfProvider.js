@@ -1,5 +1,9 @@
 import PDFDocument from "pdfkit";
 
+// Provider responsavel pelo layout bruto da credencial em PDF.
+// Ajustes visuais, patrocinadores, textos fixos e dimensoes devem ser feitos
+// aqui. A assinatura de `buildCredentialPdf` deve permanecer estavel para que
+// o restante do backend nao precise conhecer detalhes do PDF.
 const COLORS = {
   darkGreen: "#1F5E3B",
   vividGreen: "#35A24C",

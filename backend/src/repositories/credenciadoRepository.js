@@ -1,5 +1,8 @@
 import { prisma } from "../prisma.js";
 
+// Include unico usado pelas consultas de identidade.
+// Alterar esta estrutura muda a carga retornada para varias telas admin;
+// faça isso com cuidado para nao aumentar payload sem necessidade.
 const includeIdentity = {
   evento: true,
   credencial: {
@@ -32,6 +35,8 @@ export async function listCredenciadosPaginated({
   page,
   pageSize
 }) {
+  // Os filtros da listagem admin nascem aqui. Se novos campos de busca forem
+  // adicionados no frontend, inclua o mapeamento correspondente neste `where`.
   const where = {
     categoria: categoria || undefined,
     OR: search

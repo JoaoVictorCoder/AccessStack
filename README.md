@@ -1,8 +1,8 @@
-# Checkpoint 2 - Refinamento Operacional + Alinhamento Hackathon
+# Sistema de Credenciamento e Controle de Acesso
 
-Evolucao incremental do projeto existente para uso mais real em evento, mantendo separacao entre area publica e area admin.
+Sistema para credenciamento publico, emissao de credenciais, operacao administrativa e validacao de acesso no evento.
 
-## Principais ajustes desta etapa
+## Funcionalidades principais
 
 - Remocao de `RG` do cadastro e do modelo.
 - Documento flexivel por categoria (`CPF`, `CNPJ` ou ambos).
@@ -112,7 +112,7 @@ cd backend
 cp .env.example .env
 npm install
 npm run prisma:generate
-npm run prisma:migrate:dev -- --name checkpoint2_refine
+npm run prisma:migrate:dev -- --name init
 npm run seed
 npm run dev
 ```
@@ -182,3 +182,13 @@ npm run backup:export
 - Layout institucional do PDF usa placeholders para logos.
 - Integracao fisica de catraca continua mock.
 - Sem exclusao fisica como fluxo principal (apenas exclusao logica).
+
+## Documentacao de manutencao
+
+- Guia tecnico de alteracoes manuais: `docs/MANUTENCAO.md`
+- Pontos de acoplamento comentados no codigo:
+  - `frontend/src/App.jsx`
+  - `frontend/src/api/credenciamentoApi.js`
+  - `backend/src/providers/pdf/credentialPdfProvider.js`
+  - `backend/src/repositories/credenciadoRepository.js`
+  - `backend/src/adapters/out/*`

@@ -7,6 +7,9 @@ import { router } from "./routes/index.js";
 
 export const app = express();
 
+// CORS e cookies sustentam a autenticacao entre Vite e API local.
+// Se o frontend mudar de dominio/porta, ajuste `CORS_ORIGINS` antes de depurar
+// login quebrado; esse costuma ser o primeiro ponto de falha em ambiente manual.
 const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:5173")
   .split(",")
   .map((item) => item.trim())
