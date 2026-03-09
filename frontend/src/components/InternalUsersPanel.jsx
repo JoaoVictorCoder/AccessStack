@@ -1,5 +1,20 @@
 import { useMemo, useState } from "react";
 import { t } from "../locales";
+import { Alert, AlertDescription } from "./ui/alert";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Select } from "./ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "./ui/table";
 
 function createDefaultOperatorPermissions() {
   return {
@@ -82,7 +97,10 @@ export default function InternalUsersPanel({
 
   function beginEdit(user) {
     setEditingUserId(user.id);
-    setDraftPermissions({ ...createDefaultOperatorPermissions(), ...(user.permissoesCustomizadas || {}) });
+    setDraftPermissions({
+      ...createDefaultOperatorPermissions(),
+      ...(user.permissoesCustomizadas || {})
+    });
     setDraftUser({
       standId: user.standId || "",
       standName: user.standName || "",
@@ -123,284 +141,344 @@ export default function InternalUsersPanel({
   }
 
   return (
-    <section className="card">
-      <h3>{t("usersPanel.title")}</h3>
-
-      <form className="grid" onSubmit={handleCreate}>
-        <label>
-          {t("usersPanel.name")}
-          <input
-            value={form.nome}
-            onChange={(event) => setForm((currentForm) => ({ ...currentForm, nome: event.target.value }))}
-            required
-          />
-        </label>
-        <label>
-          {t("table.email")}
-          <input
-            value={form.email}
-            onChange={(event) => setForm((currentForm) => ({ ...currentForm, email: event.target.value }))}
-            required
-          />
-        </label>
-        <label>
-          {t("auth.password")}
-          <input
-            type="password"
-            value={form.senha}
-            onChange={(event) => setForm((currentForm) => ({ ...currentForm, senha: event.target.value }))}
-            required
-          />
-        </label>
-        <label>
-          {t("usersPanel.role")}
-          {managerRole === "COMISSAO_ORGANIZADORA" ? (
-            <input value="OPERADOR_QR" disabled />
-          ) : (
-            <select
-              value={form.role}
-              onChange={(event) => setForm((currentForm) => ({ ...currentForm, role: event.target.value }))}
-            >
-              <option value="ADMIN">ADMIN</option>
-              <option value="COMISSAO_ORGANIZADORA">COMISSAO_ORGANIZADORA</option>
-              <option value="OPERADOR_QR">OPERADOR_QR</option>
-            </select>
-          )}
-        </label>
-        <label>
-          {t("usersPanel.standId")}
-          <input
-            value={form.standId}
-            onChange={(event) => setForm((currentForm) => ({ ...currentForm, standId: event.target.value }))}
-          />
-        </label>
-        <label>
-          {t("usersPanel.standName")}
-          <input
-            value={form.standName}
-            onChange={(event) => setForm((currentForm) => ({ ...currentForm, standName: event.target.value }))}
-          />
-        </label>
-        <label>
-          {t("usersPanel.company")}
-          <input
-            value={form.empresaVinculadaNome || form.empresaNome}
-            onChange={(event) =>
-              setForm((currentForm) => ({
-                ...currentForm,
-                empresaNome: event.target.value,
-                empresaVinculadaNome: event.target.value
-              }))
-            }
-          />
-        </label>
-        <label>
-          {t("usersPanel.companyId")}
-          <input
-            value={form.empresaVinculadaId}
-            onChange={(event) =>
-              setForm((currentForm) => ({ ...currentForm, empresaVinculadaId: event.target.value }))
-            }
-          />
-        </label>
-        {managerRole !== "COMISSAO_ORGANIZADORA" && (
-          <label>
-            {t("usersPanel.governanceResponsibleId")}
-            <input
-              value={form.comissaoResponsavelId}
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("usersPanel.title")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" onSubmit={handleCreate}>
+          <div className="field-stack">
+            <Label>{t("usersPanel.name")}</Label>
+            <Input
+              value={form.nome}
               onChange={(event) =>
-                setForm((currentForm) => ({ ...currentForm, comissaoResponsavelId: event.target.value }))
+                setForm((currentForm) => ({ ...currentForm, nome: event.target.value }))
               }
+              required
             />
-          </label>
-        )}
-        <button type="submit" disabled={isCreating}>
-          {isCreating ? t("usersPanel.creating") : t("usersPanel.createUser")}
-        </button>
-      </form>
-
-      {successMessage && <p className="success">{successMessage}</p>}
-      {errorMessage && <p className="error">{errorMessage}</p>}
-
-      <div className="table-wrapper">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>{t("usersPanel.name")}</th>
-              <th>{t("table.email")}</th>
-              <th>{t("usersPanel.role")}</th>
-              <th>{t("usersPanel.standName")}</th>
-              <th>{t("usersPanel.company")}</th>
-              <th>{t("usersPanel.active")}</th>
-              <th>{t("usersPanel.actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleUsers.map((user) => {
-              const isEditing = editingUserId === user.id;
-              const isRowLoading = loadingRowId === user.id;
-
-              return (
-                <tr key={user.id}>
-                  <td>{user.nome}</td>
-                  <td>{user.email}</td>
-                  <td>{user.role}</td>
-                  <td>
-                    {isEditing ? (
-                      <input
-                        value={draftUser.standName}
-                        onChange={(event) =>
-                          setDraftUser((currentDraft) => ({ ...currentDraft, standName: event.target.value }))
-                        }
-                      />
-                    ) : (
-                      user.standName || "-"
-                    )}
-                  </td>
-                  <td>
-                    {isEditing ? (
-                      <input
-                        value={draftUser.empresaVinculadaNome || draftUser.empresaNome}
-                        onChange={(event) =>
-                          setDraftUser((currentDraft) => ({
-                            ...currentDraft,
-                            empresaNome: event.target.value,
-                            empresaVinculadaNome: event.target.value
-                          }))
-                        }
-                      />
-                    ) : (
-                      user.empresaVinculadaNome || user.empresaNome || "-"
-                    )}
-                  </td>
-                  <td>{user.ativo ? t("common.yes") : t("common.no")}</td>
-                  <td className="table-actions">
-                    <button
-                      type="button"
-                      disabled={isRowLoading}
-                      onClick={async () => {
-                        setLoadingRowId(user.id);
-                        setErrorMessage("");
-                        setSuccessMessage("");
-                        try {
-                          await onToggleActive(user.id, !user.ativo);
-                          setSuccessMessage(t("usersPanel.statusSuccess"));
-                        } catch (toggleError) {
-                          setErrorMessage(toggleError.message || t("usersPanel.statusError"));
-                        } finally {
-                          setLoadingRowId("");
-                        }
-                      }}
-                    >
-                      {isRowLoading
-                        ? t("usersPanel.editing")
-                        : user.ativo
-                          ? t("usersPanel.deactivate")
-                          : t("usersPanel.activate")}
-                    </button>
-
-                    {!isEditing && (
-                      <button type="button" onClick={() => beginEdit(user)}>
-                        {t("usersPanel.editUser")}
-                      </button>
-                    )}
-
-                    {isEditing && (
-                      <>
-                        {user.role === "OPERADOR_QR" && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setDraftPermissions((currentPermissions) => ({
-                                ...currentPermissions,
-                                podeUsarCameraParaLeituraQR: !currentPermissions.podeUsarCameraParaLeituraQR
-                              }))
-                            }
-                          >
-                            {t("usersPanel.cameraPermission", {
-                              value: draftPermissions.podeUsarCameraParaLeituraQR ? "ON" : "OFF"
-                            })}
-                          </button>
-                        )}
-                        <button type="button" disabled={isRowLoading} onClick={() => saveEdit(user)}>
-                          {isRowLoading ? t("credentialPage.saving") : t("usersPanel.saveChanges")}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingUserId("");
-                            setDraftPermissions(createDefaultOperatorPermissions());
-                          }}
-                        >
-                          {t("common.cancel")}
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {editingUserId && usersById[editingUserId]?.role === "OPERADOR_QR" && (
-        <section className="card">
-          <h4>{t("usersPanel.operatorPermissions")}</h4>
-          <div className="grid">
-            {Object.entries(draftPermissions).map(([permissionKey, value]) => (
-              <label key={permissionKey} className="checkbox">
-                <input
-                  type="checkbox"
-                  checked={value === true}
-                  onChange={(event) =>
-                    setDraftPermissions((currentPermissions) => ({
-                      ...currentPermissions,
-                      [permissionKey]: event.target.checked
-                    }))
-                  }
-                />
-                {permissionKey}
-              </label>
-            ))}
           </div>
-          <label>
-            {t("usersPanel.standId")}
-            <input
-              value={draftUser.standId}
+          <div className="field-stack">
+            <Label>{t("table.email")}</Label>
+            <Input
+              value={form.email}
               onChange={(event) =>
-                setDraftUser((currentDraft) => ({ ...currentDraft, standId: event.target.value }))
+                setForm((currentForm) => ({ ...currentForm, email: event.target.value }))
+              }
+              required
+            />
+          </div>
+          <div className="field-stack">
+            <Label>{t("auth.password")}</Label>
+            <Input
+              type="password"
+              value={form.senha}
+              onChange={(event) =>
+                setForm((currentForm) => ({ ...currentForm, senha: event.target.value }))
+              }
+              required
+            />
+          </div>
+          <div className="field-stack">
+            <Label>{t("usersPanel.role")}</Label>
+            {managerRole === "COMISSAO_ORGANIZADORA" ? (
+              <Input value="OPERADOR_QR" disabled />
+            ) : (
+              <Select
+                value={form.role}
+                onChange={(event) =>
+                  setForm((currentForm) => ({ ...currentForm, role: event.target.value }))
+                }
+              >
+                <option value="ADMIN">ADMIN</option>
+                <option value="COMISSAO_ORGANIZADORA">COMISSAO_ORGANIZADORA</option>
+                <option value="OPERADOR_QR">OPERADOR_QR</option>
+              </Select>
+            )}
+          </div>
+          <div className="field-stack">
+            <Label>{t("usersPanel.standId")}</Label>
+            <Input
+              value={form.standId}
+              onChange={(event) =>
+                setForm((currentForm) => ({ ...currentForm, standId: event.target.value }))
               }
             />
-          </label>
-          <label>
-            {t("usersPanel.companyId")}
-            <input
-              value={draftUser.empresaVinculadaId}
+          </div>
+          <div className="field-stack">
+            <Label>{t("usersPanel.standName")}</Label>
+            <Input
+              value={form.standName}
               onChange={(event) =>
-                setDraftUser((currentDraft) => ({
-                  ...currentDraft,
-                  empresaVinculadaId: event.target.value
+                setForm((currentForm) => ({ ...currentForm, standName: event.target.value }))
+              }
+            />
+          </div>
+          <div className="field-stack">
+            <Label>{t("usersPanel.company")}</Label>
+            <Input
+              value={form.empresaVinculadaNome || form.empresaNome}
+              onChange={(event) =>
+                setForm((currentForm) => ({
+                  ...currentForm,
+                  empresaNome: event.target.value,
+                  empresaVinculadaNome: event.target.value
                 }))
               }
             />
-          </label>
+          </div>
+          <div className="field-stack">
+            <Label>{t("usersPanel.companyId")}</Label>
+            <Input
+              value={form.empresaVinculadaId}
+              onChange={(event) =>
+                setForm((currentForm) => ({ ...currentForm, empresaVinculadaId: event.target.value }))
+              }
+            />
+          </div>
           {managerRole !== "COMISSAO_ORGANIZADORA" && (
-            <label>
-              {t("usersPanel.governanceResponsibleId")}
-              <input
-                value={draftUser.comissaoResponsavelId}
+            <div className="field-stack">
+              <Label>{t("usersPanel.governanceResponsibleId")}</Label>
+              <Input
+                value={form.comissaoResponsavelId}
                 onChange={(event) =>
-                  setDraftUser((currentDraft) => ({
-                    ...currentDraft,
+                  setForm((currentForm) => ({
+                    ...currentForm,
                     comissaoResponsavelId: event.target.value
                   }))
                 }
               />
-            </label>
+            </div>
           )}
-        </section>
-      )}
-    </section>
+          <div className="md:col-span-2 xl:col-span-3">
+            <Button type="submit" disabled={isCreating}>
+              {isCreating ? t("usersPanel.creating") : t("usersPanel.createUser")}
+            </Button>
+          </div>
+        </form>
+
+        {successMessage && (
+          <Alert variant="success">
+            <AlertDescription>{successMessage}</AlertDescription>
+          </Alert>
+        )}
+        {errorMessage && (
+          <Alert variant="destructive">
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("usersPanel.name")}</TableHead>
+                <TableHead>{t("table.email")}</TableHead>
+                <TableHead>{t("usersPanel.role")}</TableHead>
+                <TableHead>{t("usersPanel.standName")}</TableHead>
+                <TableHead>{t("usersPanel.company")}</TableHead>
+                <TableHead>{t("usersPanel.active")}</TableHead>
+                <TableHead>{t("usersPanel.actions")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visibleUsers.map((user) => {
+                const isEditing = editingUserId === user.id;
+                const isRowLoading = loadingRowId === user.id;
+
+                return (
+                  <TableRow key={user.id}>
+                    <TableCell>{user.nome}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.role}</TableCell>
+                    <TableCell>
+                      {isEditing ? (
+                        <Input
+                          value={draftUser.standName}
+                          onChange={(event) =>
+                            setDraftUser((currentDraft) => ({
+                              ...currentDraft,
+                              standName: event.target.value
+                            }))
+                          }
+                        />
+                      ) : (
+                        user.standName || "-"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isEditing ? (
+                        <Input
+                          value={draftUser.empresaVinculadaNome || draftUser.empresaNome}
+                          onChange={(event) =>
+                            setDraftUser((currentDraft) => ({
+                              ...currentDraft,
+                              empresaNome: event.target.value,
+                              empresaVinculadaNome: event.target.value
+                            }))
+                          }
+                        />
+                      ) : (
+                        user.empresaVinculadaNome || user.empresaNome || "-"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.ativo ? "success" : "destructive"}>
+                        {user.ativo ? t("common.yes") : t("common.no")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={isRowLoading}
+                          onClick={async () => {
+                            setLoadingRowId(user.id);
+                            setErrorMessage("");
+                            setSuccessMessage("");
+                            try {
+                              await onToggleActive(user.id, !user.ativo);
+                              setSuccessMessage(t("usersPanel.statusSuccess"));
+                            } catch (toggleError) {
+                              setErrorMessage(toggleError.message || t("usersPanel.statusError"));
+                            } finally {
+                              setLoadingRowId("");
+                            }
+                          }}
+                        >
+                          {isRowLoading
+                            ? t("usersPanel.editing")
+                            : user.ativo
+                              ? t("usersPanel.deactivate")
+                              : t("usersPanel.activate")}
+                        </Button>
+
+                        {!isEditing && (
+                          <Button type="button" size="sm" variant="secondary" onClick={() => beginEdit(user)}>
+                            {t("usersPanel.editUser")}
+                          </Button>
+                        )}
+
+                        {isEditing && (
+                          <>
+                            {user.role === "OPERADOR_QR" && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setDraftPermissions((currentPermissions) => ({
+                                    ...currentPermissions,
+                                    podeUsarCameraParaLeituraQR:
+                                      !currentPermissions.podeUsarCameraParaLeituraQR
+                                  }))
+                                }
+                              >
+                                {t("usersPanel.cameraPermission", {
+                                  value: draftPermissions.podeUsarCameraParaLeituraQR ? "ON" : "OFF"
+                                })}
+                              </Button>
+                            )}
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={isRowLoading}
+                              onClick={() => saveEdit(user)}
+                            >
+                              {isRowLoading ? t("credentialPage.saving") : t("usersPanel.saveChanges")}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditingUserId("");
+                                setDraftPermissions(createDefaultOperatorPermissions());
+                              }}
+                            >
+                              {t("common.cancel")}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+
+        {editingUserId && usersById[editingUserId]?.role === "OPERADOR_QR" && (
+          <Card className="border-zinc-200 bg-zinc-50">
+            <CardHeader>
+              <CardTitle className="text-base">{t("usersPanel.operatorPermissions")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-2 md:grid-cols-2">
+                {Object.entries(draftPermissions).map(([permissionKey, value]) => (
+                  <label key={permissionKey} className="flex items-center gap-2 rounded-md border bg-card p-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={value === true}
+                      onChange={(event) =>
+                        setDraftPermissions((currentPermissions) => ({
+                          ...currentPermissions,
+                          [permissionKey]: event.target.checked
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+                    />
+                    {permissionKey}
+                  </label>
+                ))}
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="field-stack">
+                  <Label>{t("usersPanel.standId")}</Label>
+                  <Input
+                    value={draftUser.standId}
+                    onChange={(event) =>
+                      setDraftUser((currentDraft) => ({
+                        ...currentDraft,
+                        standId: event.target.value
+                      }))
+                    }
+                  />
+                </div>
+                <div className="field-stack">
+                  <Label>{t("usersPanel.companyId")}</Label>
+                  <Input
+                    value={draftUser.empresaVinculadaId}
+                    onChange={(event) =>
+                      setDraftUser((currentDraft) => ({
+                        ...currentDraft,
+                        empresaVinculadaId: event.target.value
+                      }))
+                    }
+                  />
+                </div>
+                {managerRole !== "COMISSAO_ORGANIZADORA" && (
+                  <div className="field-stack">
+                    <Label>{t("usersPanel.governanceResponsibleId")}</Label>
+                    <Input
+                      value={draftUser.comissaoResponsavelId}
+                      onChange={(event) =>
+                        setDraftUser((currentDraft) => ({
+                          ...currentDraft,
+                          comissaoResponsavelId: event.target.value
+                        }))
+                      }
+                    />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </CardContent>
+    </Card>
   );
 }

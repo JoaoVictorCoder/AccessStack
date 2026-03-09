@@ -6,6 +6,10 @@ This guide explains where to change AcessStack safely without breaking frontend/
 
 - `frontend/src/App.jsx`: top-level routes and session orchestration
 - `frontend/src/api/platformApi.js`: frontend API contract layer
+- `frontend/tailwind.config.js`: Tailwind + theme token mapping
+- `frontend/src/styles.css`: global zinc theme tokens and base styles
+- `frontend/src/components/ui/*`: ShadCN-based reusable UI primitives
+- `frontend/src/lib/utils.js`: `cn()` class merge helper
 - `frontend/src/locales/index.js`: active language switch (`ACTIVE_LANGUAGE_CODE`)
 - `frontend/src/locales/en-us.json` and `frontend/src/locales/pt-br.json`: UI dictionaries
 - `frontend/src/components/*`: reusable UI blocks
@@ -58,6 +62,21 @@ Note: payload keys to backend remain legacy Portuguese in several endpoints (`no
   - `frontend/src/locales/index.js` (`ACTIVE_LANGUAGE_CODE`)
 - Keep key parity between locale files to avoid fallback key rendering.
 
+### Frontend UI Consistency (ShadCN + zinc)
+
+- Prefer shared UI primitives from `frontend/src/components/ui/*` instead of ad-hoc HTML/CSS.
+- Keep page surfaces and controls in zinc theme (via CSS variables in `frontend/src/styles.css`).
+- Use semantic variants only for feedback:
+  - success
+  - warning
+  - destructive
+- When adding new page sections, preserve the same composition model:
+  - `Card` for containers
+  - `Button`, `Input`, `Select`, `Textarea` for form/actions
+  - `Alert` for feedback
+  - `Table` for listings
+  - `Dialog` for modals
+
 ### PDF Generation
 
 Main file:
@@ -101,6 +120,12 @@ If you change includes/selects, verify affected mappers and UI tables.
 
 - Frontend build succeeds
 - Backend syntax check succeeds
+- UI still renders with zinc theme and ShadCN components on:
+  - login
+  - public registration
+  - admin dashboard
+  - operator QR flow
+  - credential detail
 - Public registration still creates credential
 - Admin login and list pages still load
 - Operator check-in still validates and logs attempts

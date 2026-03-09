@@ -11,7 +11,6 @@ import {
   mapPublicCredenciamentoResult
 } from "../mappers/identityMapper.js";
 import { createCredenciamento } from "../services/credenciamentoService.js";
-import { enqueueDescarbonizacaoProcess } from "../services/descarbonizacaoService.js";
 import {
   softDeleteCredenciadoAdmin,
   updateCredenciadoAdmin,
@@ -29,8 +28,7 @@ import {
 import { buildActorContextFromAuth } from "../http/actorContext.js";
 
 const createCredenciamentoUseCase = new CreateCredenciamentoUseCase({
-  createCredenciamento,
-  enqueueDescarbonizacaoProcess
+  createCredenciamento
 });
 
 function handleCreateError(error, res) {

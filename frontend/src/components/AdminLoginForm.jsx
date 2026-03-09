@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { t } from "../locales";
+import { Alert, AlertDescription } from "./ui/alert";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 export default function AdminLoginForm({
   onSubmit,
@@ -12,43 +17,52 @@ export default function AdminLoginForm({
   const [password, setPassword] = useState("");
 
   return (
-    <section className="card auth-card">
-      <h2>{title}</h2>
-      <p className="section-subtitle">{subtitle}</p>
+    <Card className="border-zinc-200">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{subtitle}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSubmit({ email, senha: password });
+          }}
+        >
+          <div className="field-stack">
+            <Label htmlFor="email">{t("auth.email")}</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+          </div>
 
-      <form
-        className="grid single-column"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onSubmit({ email, senha: password });
-        }}
-      >
-        <label>
-          {t("auth.email")}
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </label>
+          <div className="field-stack">
+            <Label htmlFor="password">{t("auth.password")}</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+          </div>
 
-        <label>
-          {t("auth.password")}
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </label>
+          <Button className="w-full" type="submit" disabled={loading}>
+            {loading ? t("auth.signingIn") : t("auth.signIn")}
+          </Button>
+        </form>
 
-        <button type="submit" disabled={loading}>
-          {loading ? t("auth.signingIn") : t("auth.signIn")}
-        </button>
-      </form>
-
-      {error && <p className="error">{error}</p>}
-    </section>
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
   );
 }

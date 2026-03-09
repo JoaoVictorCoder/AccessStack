@@ -4,26 +4,6 @@ const BRAZIL_STATE_CODES = new Set([
   "RR", "SC", "SP", "SE", "TO"
 ]);
 
-export const REFERENCE_CITY_DISTANCES_KM = Object.freeze({
-  "Sao Paulo": 15,
-  "Campinas": 95,
-  "Ribeirao Preto": 120,
-  "Belo Horizonte": 420,
-  "Curitiba": 410,
-  "Porto Alegre": 820,
-  "Rio de Janeiro": 430,
-  "Brasilia": 860
-});
-
-const CARBON_FACTORS = Object.freeze({
-  GASOLINA: 2.04,
-  ALCOOL: 1.51,
-  DIESEL: 2.6,
-  ELETRICO: 0.0545
-});
-const VALID_FUEL_TYPES = new Set(Object.keys(CARBON_FACTORS));
-const DEFAULT_DISTANCE_KM = 250;
-
 const obviousFakeTokens = new Set([
   "teste",
   "aaaa",
@@ -138,7 +118,7 @@ export function isValidMunicipio(value) {
 }
 
 export function isValidUf(value) {
-  return BR_UFS.has((value || "").trim().toUpperCase());
+  return BRAZIL_STATE_CODES.has((value || "").trim().toUpperCase());
 }
 
 export function isValidWebsite(value) {
@@ -167,18 +147,12 @@ export function normalizePublicFormPayload(form) {
     nomeCompleto: normalizeSpaces(form.nomeCompleto),
     email: normalizeSpaces(form.email).toLowerCase(),
     municipio: normalizeSpaces(form.municipio),
-    cidadeOrigem: normalizeSpaces(form.cidadeOrigem || form.municipio),
     uf: (form.uf || "").trim().toUpperCase(),
     nacionalidade: normalizeSpaces(form.nacionalidade),
     nacionalidadeEmpresa: normalizeSpaces(form.nacionalidadeEmpresa),
     cpf: digits(form.cpf),
     cnpj: digits(form.cnpj),
     celular: digits(form.celular),
-    combustivel: normalizeSpaces(form.combustivel || form.tipoCombustivel).toUpperCase(),
-    distanciaKm:
-      form.distanciaKm === "" || form.distanciaKm === null || form.distanciaKm === undefined
-        ? null
-        : Number(form.distanciaKm),
     aceitouCompartilhamentoComExpositores: form.aceitouCompartilhamentoComExpositores === true,
     siteEmpresa: normalizeSpaces(form.siteEmpresa),
     nomeEmpresa: normalizeSpaces(form.nomeEmpresa),
@@ -187,21 +161,6 @@ export function normalizePublicFormPayload(form) {
     nomeVeiculo: normalizeSpaces(form.nomeVeiculo),
     funcaoCargo: normalizeSpaces(form.funcaoCargo)
   };
-}
-
-export function resolveDistanceFromCity(originCity) {
-  const city = normalizeSpaces(originCity);
-  return REFERENCE_CITY_DISTANCES_KM[city] ?? DEFAULT_DISTANCE_KM;
-}
-
-export function calculateCarbonEstimate({ cidadeOrigem, combustivel, distanciaKm }) {
-  const distance = Number.isFinite(Number(distanciaKm)) && Number(distanciaKm) > 0
-    ? Number(distanciaKm)
-    : resolveDistanceFromCity(cidadeOrigem);
-  const fuel = (combustivel || "NAO_INFORMADO").toUpperCase();
-  const factor = CARBON_FACTORS[fuel] ?? null;
-  if (factor === null) return null;
-  return Number((distance * factor).toFixed(3));
 }
 
 export function validatePublicParticipantForm(rawForm) {
@@ -224,9 +183,6 @@ export function validatePublicParticipantForm(rawForm) {
   if (!isValidMunicipio(form.municipio)) {
     errors.municipio = "validation.city";
   }
-  if (!isValidMunicipio(form.cidadeOrigem || form.municipio)) {
-    errors.cidadeOrigem = "validation.originCity";
-  }
   if (!isVisitanteInternacional && !isValidUf(form.uf)) {
     errors.uf = "validation.state";
   }
@@ -240,17 +196,6 @@ export function validatePublicParticipantForm(rawForm) {
   if (!form.aceitouLgpd) {
     errors.aceitouLgpd = "validation.privacyConsent";
   }
-  if (form.combustivel && form.combustivel !== "NAO_INFORMADO" && !VALID_FUEL_TYPES.has(form.combustivel)) {
-    errors.combustivel = "validation.fuel";
-  }
-
-  if (
-    form.distanciaKm !== null &&
-    (!Number.isFinite(form.distanciaKm) || form.distanciaKm <= 0 || form.distanciaKm > 3000)
-  ) {
-    errors.distanciaKm = "validation.distance";
-  }
-
   if (form.cpf && !isValidCpf(form.cpf) && !isVisitanteInternacional) {
     errors.cpf = "validation.cpf";
   }
@@ -300,23 +245,10 @@ export function validatePublicParticipantForm(rawForm) {
     }
   }
 
-  const distance = resolveDistanceFromCity(form.cidadeOrigem || form.municipio);
-  const estimatedCarbonFootprint = calculateCarbonEstimate({
-    cidadeOrigem: form.cidadeOrigem || form.municipio,
-    combustivel: form.combustivel,
-    distanciaKm: distance
-  });
-
   return {
     errors,
-    normalized: {
-      ...form,
-      distanciaKm: distance ?? null,
-      pegadaCarbonoEstimada: estimatedCarbonFootprint
-    }
+    normalized: form
   };
 }
 
-export const resolveDistanceFromCidade = resolveDistanceFromCity;
-export const calculateCarbonEstimateFront = calculateCarbonEstimate;
 export const validatePublicCredenciadoForm = validatePublicParticipantForm;

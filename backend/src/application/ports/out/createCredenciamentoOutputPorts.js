@@ -1,10 +1,8 @@
 // Output port contracts are represented by injected adapter functions.
 // Adapters de saida exigidos por este fluxo de credenciamento:
 // - createCredenciamento(payload, actor)
-// - enqueueDescarbonizacaoProcess(credenciado)
 export function buildCreateCredenciamentoOutputPorts(adapters) {
   return {
-    createCredenciamento: adapters.createCredenciamento,
-    enqueueDescarbonizacaoProcess: adapters.enqueueDescarbonizacaoProcess
+    createCredenciamento: adapters.createCredenciamento
   };
 }

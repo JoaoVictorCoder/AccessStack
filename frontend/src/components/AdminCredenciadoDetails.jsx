@@ -5,12 +5,24 @@ import {
   governanceCategoryOption
 } from "../constants/formConfig";
 import { t } from "../locales";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Select } from "./ui/select";
 
 function Field({ label, value }) {
   return (
-    <div className="detail-field">
-      <span>{label}</span>
-      <strong>{value || "-"}</strong>
+    <div className="rounded-md border bg-zinc-50 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-sm font-medium">{value || "-"}</p>
     </div>
   );
 }
@@ -25,11 +37,6 @@ const editableTextFields = [
   "uf",
   "nacionalidade",
   "nacionalidadeEmpresa",
-  "tipoCombustivel",
-  "cidadeOrigem",
-  "combustivel",
-  "distanciaKm",
-  "pegadaCarbonoEstimada",
   "siteEmpresa",
   "nomeEmpresa",
   "nomeVeiculo",
@@ -66,79 +73,65 @@ export default function AdminCredenciadoDetails({
     funcaoCargo: credenciado?.funcaoCargo || "",
     nacionalidade: credenciado?.nacionalidade || "",
     nacionalidadeEmpresa: credenciado?.nacionalidadeEmpresa || "",
-    tipoCombustivel: credenciado?.tipoCombustivel || "NAO_INFORMADO",
-    cidadeOrigem: credenciado?.cidadeOrigem || "",
-    combustivel: credenciado?.combustivel || "NAO_INFORMADO",
-    distanciaKm: credenciado?.distanciaKm || "",
-    pegadaCarbonoEstimada: credenciado?.pegadaCarbonoEstimada || "",
     aceitouLgpd: credenciado?.aceitouLgpd === true,
     aceitouCompartilhamentoComExpositores:
       credenciado?.aceitouCompartilhamentoComExpositores === true,
     pcd: credenciado?.pcd === true
   });
 
-  if (!credenciado) {
-    return null;
-  }
+  if (!credenciado) return null;
 
   return (
-    <div className="modal-backdrop">
-      <section className="card modal-card">
-        <div className="modal-header">
-          <h3>{t("participantDetails.modalTitle")}</h3>
-          <button type="button" onClick={onClose}>
-            {t("participantDetails.close")}
-          </button>
-        </div>
+    <Dialog open onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="max-w-6xl">
+        <DialogHeader>
+          <DialogTitle>{t("participantDetails.modalTitle")}</DialogTitle>
+          <DialogDescription>
+            {credenciado.nomeCompleto} | {credenciado.categoria}
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="toolbar">
-          <button type="button" onClick={() => setIsEditing((value) => !value)}>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="secondary" onClick={() => setIsEditing((value) => !value)}>
             {isEditing ? t("participantDetails.toggleEditOn") : t("participantDetails.toggleEditOff")}
-          </button>
-          <button type="button" className="btn-danger" onClick={onSoftDelete}>
+          </Button>
+          <Button type="button" variant="destructive" onClick={onSoftDelete}>
             {t("participantDetails.deactivateRegistration")}
-          </button>
-          <button
-            type="button"
-            className="btn-danger"
-            onClick={() => onCredentialStatusChange("INATIVA")}
-          >
+          </Button>
+          <Button type="button" variant="destructive" onClick={() => onCredentialStatusChange("INATIVA")}>
             {t("participantDetails.blockCredential")}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => onCredentialStatusChange("ATIVA")}
-          >
+          </Button>
+          <Button type="button" variant="outline" onClick={() => onCredentialStatusChange("ATIVA")}>
             {t("participantDetails.reactivateCredential")}
-          </button>
-          <button type="button" className="btn-secondary" onClick={onReissue}>
+          </Button>
+          <Button type="button" variant="outline" onClick={onReissue}>
             {t("participantDetails.reissueCredential")}
-          </button>
+          </Button>
           {credenciado?.credencial?.id && (
-            <a
-              className="link-button"
-              href={`${apiBaseUrl}/credenciais/${credenciado.credencial.id}/pdf`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t("participantDetails.downloadPdf")}
-            </a>
+            <Button asChild type="button" variant="outline">
+              <a
+                href={`${apiBaseUrl}/credenciais/${credenciado.credencial.id}/pdf`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t("participantDetails.downloadPdf")}
+              </a>
+            </Button>
           )}
         </div>
 
         {isEditing && (
           <form
-            className="grid"
+            className="grid gap-3 rounded-md border bg-zinc-50 p-4 md:grid-cols-2"
             onSubmit={(event) => {
               event.preventDefault();
               onSave(form);
               setIsEditing(false);
             }}
           >
-            <label>
-              {t("form.category")}
-              <select
+            <div className="field-stack">
+              <Label>{t("form.category")}</Label>
+              <Select
                 value={form.categoria}
                 onChange={(event) =>
                   setForm((currentForm) => ({ ...currentForm, categoria: event.target.value }))
@@ -149,42 +142,44 @@ export default function AdminCredenciadoDetails({
                     {t(option.labelKey)}
                   </option>
                 ))}
-              </select>
-            </label>
+              </Select>
+            </div>
 
             {editableTextFields.map((fieldName) => (
-              <label key={fieldName}>
-                {t(formFieldLabelKeyByField[fieldName] || fieldName)}
-                <input
+              <div key={fieldName} className="field-stack">
+                <Label>{t(formFieldLabelKeyByField[fieldName] || fieldName)}</Label>
+                <Input
                   value={form[fieldName] || ""}
                   onChange={(event) =>
                     setForm((currentForm) => ({ ...currentForm, [fieldName]: event.target.value }))
                   }
                 />
-              </label>
+              </div>
             ))}
 
-            <label className="checkbox">
+            <label className="md:col-span-2 flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={form.pcd}
                 onChange={(event) =>
                   setForm((currentForm) => ({ ...currentForm, pcd: event.target.checked }))
                 }
+                className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
               />
               {t("form.pcd")}
             </label>
-            <label className="checkbox">
+            <label className="md:col-span-2 flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={form.aceitouLgpd}
                 onChange={(event) =>
                   setForm((currentForm) => ({ ...currentForm, aceitouLgpd: event.target.checked }))
                 }
+                className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
               />
               {t("form.privacyConsentLabel")}
             </label>
-            <label className="checkbox">
+            <label className="md:col-span-2 flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={form.aceitouCompartilhamentoComExpositores}
@@ -194,14 +189,17 @@ export default function AdminCredenciadoDetails({
                     aceitouCompartilhamentoComExpositores: event.target.checked
                   }))
                 }
+                className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
               />
               {t("participantDetails.dataSharingWithExhibitors")}
             </label>
-            <button type="submit">{t("participantDetails.saveChanges")}</button>
+            <Button type="submit" className="md:col-span-2">
+              {t("participantDetails.saveChanges")}
+            </Button>
           </form>
         )}
 
-        <div className="details-grid">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           <Field label={t("form.fullName")} value={credenciado.nomeCompleto} />
           <Field label={t("form.category")} value={credenciado.categoria} />
           <Field label={t("participantDetails.registrationStatus")} value={credenciado.statusCredenciamento} />
@@ -212,20 +210,27 @@ export default function AdminCredenciadoDetails({
           <Field label={t("form.cnpj")} value={credenciado.cnpj} />
           <Field label={t("form.nationality")} value={credenciado.nacionalidade} />
           <Field label={t("form.companyNationality")} value={credenciado.nacionalidadeEmpresa} />
-          <Field label={t("form.fuelType")} value={credenciado.tipoCombustivel} />
-          <Field label={t("form.originCity")} value={credenciado.cidadeOrigem} />
-          <Field label={t("form.fuel")} value={credenciado.combustivel} />
-          <Field label={t("form.estimatedDistanceKm")} value={credenciado.distanciaKm} />
-          <Field label={t("form.estimatedCarbon")} value={credenciado.pegadaCarbonoEstimada} />
           <Field label={t("form.pcd")} value={credenciado.pcd ? t("common.yes") : t("common.no")} />
-          <Field label={t("table.privacy")} value={credenciado.aceitouLgpd ? t("table.accepted") : t("table.denied")} />
+          <Field
+            label={t("table.privacy")}
+            value={credenciado.aceitouLgpd ? t("table.accepted") : t("table.denied")}
+          />
           <Field
             label={t("participantDetails.dataSharingWithExhibitors")}
-            value={credenciado.aceitouCompartilhamentoComExpositores ? t("table.accepted") : t("table.denied")}
+            value={
+              credenciado.aceitouCompartilhamentoComExpositores
+                ? t("table.accepted")
+                : t("table.denied")
+            }
           />
           <Field label={t("credentialPage.event")} value={credenciado.evento?.nomeEvento} />
           <Field label={t("participantDetails.credentialCode")} value={credenciado.credencial?.codigoUnico} />
-          <Field label={t("participantDetails.credentialStatus")} value={credenciado.credencial?.statusCredencial} />
+          <div className="rounded-md border bg-zinc-50 p-3">
+            <p className="text-xs text-muted-foreground">{t("participantDetails.credentialStatus")}</p>
+            <Badge variant={credenciado.credencial?.statusCredencial === "ATIVA" ? "success" : "secondary"}>
+              {credenciado.credencial?.statusCredencial || "-"}
+            </Badge>
+          </div>
           <Field label={t("form.roleFunction")} value={credenciado.funcaoCargo} />
           <Field label={t("form.companyName")} value={credenciado.nomeEmpresa} />
           <Field label={t("form.vehicleName")} value={credenciado.nomeVeiculo} />
@@ -233,17 +238,21 @@ export default function AdminCredenciadoDetails({
           <Field label={t("form.ccir")} value={credenciado.ccir} />
         </div>
 
-        <h4>{t("participantDetails.basicHistoryTitle")}</h4>
-        <ul className="event-list compact">
-          {historyEvents.map((eventItem) => (
-            <li key={eventItem.id} className="event-item">
-              <strong>{eventItem.tipoEvento}</strong>
-              <span>{eventItem.descricao}</span>
-              <small>{new Date(eventItem.createdAt).toLocaleString()}</small>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
+        <div className="space-y-3">
+          <h4 className="text-sm font-semibold">{t("participantDetails.basicHistoryTitle")}</h4>
+          <ul className="max-h-[250px] space-y-2 overflow-auto">
+            {historyEvents.map((eventItem) => (
+              <li key={eventItem.id} className="rounded-md border bg-zinc-50 p-3">
+                <p className="text-sm font-medium">{eventItem.tipoEvento}</p>
+                <p className="text-sm text-muted-foreground">{eventItem.descricao}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {new Date(eventItem.createdAt).toLocaleString()}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

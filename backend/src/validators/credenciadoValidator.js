@@ -17,7 +17,6 @@ import {
 
 const categorias = new Set(Object.values(Categoria));
 const commonFields = ["nomeCompleto", "celular", "email", "municipio", "uf"];
-const combustiveisValidos = new Set(["GASOLINA", "ALCOOL", "DIESEL", "ELETRICO", "NAO_INFORMADO"]);
 
 function toCleanString(value) {
   return typeof value === "string" ? normalizeSpaces(value) : "";
@@ -64,14 +63,6 @@ export function validateCredenciadoPayload(payload, options = {}) {
   const pcd = payload.pcd === true;
   const aceitouCompartilhamentoComExpositores =
     payload.aceitouCompartilhamentoComExpositores === true;
-  const tipoCombustivel = toCleanString(payload.tipoCombustivel).toUpperCase() || null;
-  const cidadeOrigem = toCleanString(payload.cidadeOrigem) || municipio;
-  const combustivel = toCleanString(payload.combustivel).toUpperCase() || tipoCombustivel || "NAO_INFORMADO";
-  const distanciaKmRaw = payload.distanciaKm;
-  const distanciaKm =
-    distanciaKmRaw === null || distanciaKmRaw === undefined || distanciaKmRaw === ""
-      ? null
-      : Number(distanciaKmRaw);
   const isVisitanteInternacional =
     categoria === Categoria.VISITANTE &&
     nacionalidade &&
@@ -158,18 +149,6 @@ export function validateCredenciadoPayload(payload, options = {}) {
     errors.push("Informe um site valido");
   }
 
-  if (!cidadeOrigem || isObviousFakeText(cidadeOrigem)) {
-    errors.push("cidadeOrigem invalida");
-  }
-
-  if (!combustiveisValidos.has(combustivel)) {
-    errors.push("combustivel invalido");
-  }
-
-  if (distanciaKm !== null && (!Number.isFinite(distanciaKm) || distanciaKm <= 0 || distanciaKm > 3000)) {
-    errors.push("distanciaKm invalida");
-  }
-
   const categoryRequiredFields = {
     [Categoria.EXPOSITOR]: ["nomeEmpresa"],
     [Categoria.CAFEICULTOR]: ["ccir", "nomePropriedade"],
@@ -210,10 +189,11 @@ export function validateCredenciadoPayload(payload, options = {}) {
       uf,
       nacionalidade: nacionalidade || (categoria === Categoria.VISITANTE ? "Brasil" : null),
       nacionalidadeEmpresa,
-      tipoCombustivel,
-      cidadeOrigem,
-      combustivel,
-      distanciaKm,
+      tipoCombustivel: null,
+      cidadeOrigem: null,
+      combustivel: null,
+      distanciaKm: null,
+      pegadaCarbonoEstimada: null,
       pcd,
       aceitouLgpd: true,
       aceitouCompartilhamentoComExpositores,

@@ -9,7 +9,6 @@ import { createCredencial } from "../repositories/credencialRepository.js";
 import { createEventoSistema } from "../repositories/eventoSistemaRepository.js";
 import { createAuditLog } from "../repositories/auditLogRepository.js";
 import { findOrCreateDefaultEvento } from "../repositories/eventoRepository.js";
-import { calculateCarbonEstimate } from "./descarbonizacaoService.js";
 import { generateUniqueCredentialCode } from "./credentialCodeService.js";
 
 function buildQrPayload({ credenciadoId, credentialCode }) {
@@ -24,20 +23,15 @@ function buildQrPayload({ credenciadoId, credentialCode }) {
 export async function createCredenciamento(identityPayload, actor = null) {
   return prisma.$transaction(async (tx) => {
     const evento = await findOrCreateDefaultEvento(tx);
-    const carbon = calculateCarbonEstimate({
-      cidadeOrigem: identityPayload.cidadeOrigem || identityPayload.municipio,
-      combustivel: identityPayload.combustivel || identityPayload.tipoCombustivel,
-      distanciaKm: identityPayload.distanciaKm
-    });
 
     const createdCredenciado = await createCredenciado(
       {
         ...identityPayload,
         eventoId: identityPayload.eventoId || evento.id,
-        cidadeOrigem: carbon.cidadeOrigem,
-        combustivel: carbon.combustivel,
-        distanciaKm: carbon.distanciaKm,
-        pegadaCarbonoEstimada: carbon.pegadaCarbonoEstimada,
+        cidadeOrigem: null,
+        combustivel: null,
+        distanciaKm: null,
+        pegadaCarbonoEstimada: null,
         statusCredenciamento: StatusCredenciamento.CADASTRADO
       },
       tx
@@ -98,8 +92,7 @@ export async function createCredenciamento(identityPayload, actor = null) {
         recursoId: createdCredenciado.id,
         detalhes: {
           categoria: createdCredenciado.categoria,
-          credencialId: credencial.id,
-          pegadaCarbonoEstimada: createdCredenciado.pegadaCarbonoEstimada
+          credencialId: credencial.id
         }
       },
       tx

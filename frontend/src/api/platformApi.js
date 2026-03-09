@@ -198,11 +198,6 @@ export async function getAdminAnalyticsFraud() {
   return parseApiResponse(response);
 }
 
-export async function getAdminAnalyticsCarbon() {
-  const response = await authenticatedFetch("/admin/analytics/descarbonizacao");
-  return parseApiResponse(response);
-}
-
 export async function listAdminUsers() {
   const response = await authenticatedFetch("/admin/users");
   return parseApiResponse(response);

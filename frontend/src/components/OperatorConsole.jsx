@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import jsQR from "jsqr";
 import { t } from "../locales";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 function getPersistentDeviceId() {
   const key = "operator_device_id";
@@ -43,7 +48,6 @@ function buildVideoCandidates(videoDevices = []) {
   const remainingDevices = videoDevices.filter(
     (device) => !rearDevices.includes(device) && !frontDevices.includes(device)
   );
-
   const orderedDevices = [...rearDevices, ...remainingDevices, ...frontDevices];
 
   return [
@@ -182,9 +186,7 @@ export default function OperatorConsole({ operator, onValidate, history, loading
     if (!decodedCode) return;
 
     const now = Date.now();
-    if (lastReadRef.current.text === decodedCode && now - lastReadRef.current.at < 3000) {
-      return;
-    }
+    if (lastReadRef.current.text === decodedCode && now - lastReadRef.current.at < 3000) return;
 
     lastReadRef.current = { text: decodedCode, at: now };
     setScanStatus("validating");
@@ -209,12 +211,10 @@ export default function OperatorConsole({ operator, onValidate, history, loading
 
   async function startCamera() {
     setCameraError("");
-
     if (!canUseCamera) {
       setCameraError(t("operatorConsole.permissionError"));
       return;
     }
-
     if (!navigator?.mediaDevices?.getUserMedia) {
       setCameraError(t("operatorConsole.unsupportedCamera"));
       return;
@@ -243,14 +243,10 @@ export default function OperatorConsole({ operator, onValidate, history, loading
         try {
           if (detectorRef.current) {
             const results = await detectorRef.current.detect(videoRef.current);
-            if (results?.length) {
-              await validateByCode(results[0].rawValue || "");
-            }
+            if (results?.length) await validateByCode(results[0].rawValue || "");
           } else {
             const videoElement = videoRef.current;
-            if (!canvasRef.current) {
-              canvasRef.current = document.createElement("canvas");
-            }
+            if (!canvasRef.current) canvasRef.current = document.createElement("canvas");
             const canvas = canvasRef.current;
             canvas.width = videoElement.videoWidth || 640;
             canvas.height = videoElement.videoHeight || 480;
@@ -261,9 +257,7 @@ export default function OperatorConsole({ operator, onValidate, history, loading
               const qr = jsQR(imageData.data, imageData.width, imageData.height, {
                 inversionAttempts: "attemptBoth"
               });
-              if (qr?.data) {
-                await validateByCode(qr.data);
-              }
+              if (qr?.data) await validateByCode(qr.data);
             }
           }
         } catch {
@@ -287,97 +281,112 @@ export default function OperatorConsole({ operator, onValidate, history, loading
     }
   }
 
-  useEffect(() => {
-    return () => stopCamera();
-  }, []);
+  useEffect(() => () => stopCamera(), []);
 
   return (
-    <main className="single-page operator-page">
-      <section className="card card-elevated">
-        <h2>{t("operatorConsole.title")}</h2>
-        <p className="section-subtitle">
-          {t("operatorConsole.subtitle", {
-            name: operator?.nome || "-",
-            role: operator?.role || "-",
-            unit: operator?.standName || "-"
-          })}
-        </p>
-        <p className="hint-text">{t("operatorConsole.deviceId", { id: localDeviceId })}</p>
+    <main className="mx-auto max-w-3xl space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("operatorConsole.title")}</CardTitle>
+          <CardDescription>
+            {t("operatorConsole.subtitle", {
+              name: operator?.nome || "-",
+              role: operator?.role || "-",
+              unit: operator?.standName || "-"
+            })}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">{t("operatorConsole.deviceId", { id: localDeviceId })}</p>
 
-        <div className="toolbar">
-          {!isCameraActive ? (
-            <button type="button" onClick={startCamera} disabled={loading}>
-              {t("operatorConsole.startQrScan")}
-            </button>
-          ) : (
-            <button type="button" className="btn-danger" onClick={stopCamera}>
-              {t("operatorConsole.stopCamera")}
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {!isCameraActive ? (
+              <Button type="button" onClick={startCamera} disabled={loading}>
+                {t("operatorConsole.startQrScan")}
+              </Button>
+            ) : (
+              <Button type="button" variant="destructive" onClick={stopCamera}>
+                {t("operatorConsole.stopCamera")}
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {scanStatus === "scanning" && t("operatorConsole.scanningHint")}
+              {scanStatus === "validating" && t("operatorConsole.validatingHint")}
+            </span>
+          </div>
+
+          {isCameraActive && (
+            <div className="overflow-hidden rounded-md border bg-zinc-950">
+              <video ref={videoRef} className="operator-video" muted playsInline autoPlay />
+            </div>
           )}
-          <span className="hint-text">
-            {scanStatus === "scanning" && t("operatorConsole.scanningHint")}
-            {scanStatus === "validating" && t("operatorConsole.validatingHint")}
-          </span>
-        </div>
 
-        {isCameraActive && (
-          <div className="operator-camera-wrap">
-            <video ref={videoRef} className="operator-camera" muted playsInline autoPlay />
-          </div>
-        )}
-        {cameraError && <p className="error">{cameraError}</p>}
+          {cameraError && (
+            <Alert variant="destructive">
+              <AlertDescription>{cameraError}</AlertDescription>
+            </Alert>
+          )}
 
-        <form
-          className="grid single-column"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            await validateByCode(credentialCode);
-          }}
-        >
-          <label>
-            {t("operatorConsole.credentialInput")}
-            <input
-              value={credentialCode}
-              onChange={(event) => setCredentialCode(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            {t("operatorConsole.operationalNote")}
-            <input
-              value={operationalNote}
-              onChange={(event) => setOperationalNote(event.target.value)}
-            />
-          </label>
-          <button type="submit" disabled={loading}>
-            {loading ? t("operatorConsole.validatingHint") : t("operatorConsole.validateAccess")}
-          </button>
-        </form>
+          <form
+            className="space-y-3"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              await validateByCode(credentialCode);
+            }}
+          >
+            <div className="field-stack">
+              <Label>{t("operatorConsole.credentialInput")}</Label>
+              <Input
+                value={credentialCode}
+                onChange={(event) => setCredentialCode(event.target.value)}
+                required
+              />
+            </div>
+            <div className="field-stack">
+              <Label>{t("operatorConsole.operationalNote")}</Label>
+              <Input
+                value={operationalNote}
+                onChange={(event) => setOperationalNote(event.target.value)}
+              />
+            </div>
+            <Button type="submit" disabled={loading}>
+              {loading ? t("operatorConsole.validatingHint") : t("operatorConsole.validateAccess")}
+            </Button>
+          </form>
 
-        {result && (
-          <div className={result.resultado === "ALLOW" ? "success-box" : "error-box"}>
-            <strong>
-              {result.resultado === "ALLOW" ? t("operatorConsole.allowed") : t("operatorConsole.denied")}
-            </strong>
-            <p>{t("operatorConsole.reason", { reason: result.motivo || "-" })}</p>
-            <p>{t("operatorConsole.participant", { name: result.credenciado?.nomeCompleto || "-" })}</p>
-            <p>{t("operatorConsole.category", { category: result.credenciado?.categoria || "-" })}</p>
-          </div>
-        )}
-      </section>
+          {result && (
+            <Alert variant={result.resultado === "ALLOW" ? "success" : "destructive"}>
+              <AlertTitle>
+                {result.resultado === "ALLOW" ? t("operatorConsole.allowed") : t("operatorConsole.denied")}
+              </AlertTitle>
+              <AlertDescription>
+                <p>{t("operatorConsole.reason", { reason: result.motivo || "-" })}</p>
+                <p>{t("operatorConsole.participant", { name: result.credenciado?.nomeCompleto || "-" })}</p>
+                <p>{t("operatorConsole.category", { category: result.credenciado?.categoria || "-" })}</p>
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
-      <section className="card">
-        <h3>{t("operatorConsole.historyTitle")}</h3>
-        <ul className="event-list compact">
-          {(history || []).map((item) => (
-            <li key={item.id} className="event-item">
-              <strong>{item.resultado}</strong>
-              <span>{item.nomeCredenciado || t("operatorConsole.historyNoParticipant")}</span>
-              <small>{new Date(item.createdAt).toLocaleString()}</small>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t("operatorConsole.historyTitle")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="max-h-[280px] space-y-2 overflow-auto">
+            {(history || []).map((item) => (
+              <li key={item.id} className="rounded-md border bg-zinc-50 p-3">
+                <p className="text-sm font-semibold">{item.resultado}</p>
+                <p className="text-sm text-muted-foreground">
+                  {item.nomeCredenciado || t("operatorConsole.historyNoParticipant")}
+                </p>
+                <p className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString()}</p>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
     </main>
   );
 }

@@ -26,6 +26,10 @@ Thanks for your interest in contributing.
 - Keep backward compatibility for HTTP contracts whenever possible.
 - Prefer incremental refactors over full rewrites.
 - Update `README.md` and `docs/MANUTENCAO.md` when architecture or setup changes.
+- Frontend UI guidelines:
+  - use ShadCN-based primitives from `frontend/src/components/ui/*`
+  - keep styling aligned with the zinc theme tokens in `frontend/src/styles.css`
+  - avoid introducing isolated custom CSS when an existing shared component can be reused
 - Keep security-sensitive flows stable:
   - authentication
   - check-in validation

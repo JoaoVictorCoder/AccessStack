@@ -5,16 +5,41 @@ import {
   formFieldLabelKeyByField
 } from "../constants/formConfig";
 import { t } from "../locales";
-import {
-  REFERENCE_CITY_DISTANCES_KM,
-  calculateCarbonEstimate,
-  resolveDistanceFromCity
-} from "../utils/validation";
+import { cn } from "../lib/utils";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Select } from "./ui/select";
 
 const stateCodeOptions = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
-  "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
-  "SP", "SE", "TO", "EX"
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
+  "EX"
 ];
 
 function getFieldLabel(fieldName) {
@@ -22,16 +47,15 @@ function getFieldLabel(fieldName) {
 }
 
 function getDocumentHintByCategory(category) {
-  if (category === "CAFEICULTOR") {
-    return t("form.documentHintProducer");
-  }
-  if (category === "EXPOSITOR" || category === "IMPRENSA") {
-    return t("form.documentHintCompany");
-  }
-  if (category === "COMISSAO_ORGANIZADORA") {
-    return t("form.documentHintGovernance");
-  }
+  if (category === "CAFEICULTOR") return t("form.documentHintProducer");
+  if (category === "EXPOSITOR" || category === "IMPRENSA") return t("form.documentHintCompany");
+  if (category === "COMISSAO_ORGANIZADORA") return t("form.documentHintGovernance");
   return t("form.documentHintDefault");
+}
+
+function FieldError({ show, message }) {
+  if (!show || !message) return null;
+  return <small className="text-xs text-destructive">{t(message)}</small>;
 }
 
 export default function CredenciadoForm({
@@ -48,31 +72,35 @@ export default function CredenciadoForm({
     form.categoria === "VISITANTE" &&
     form.nacionalidade &&
     form.nacionalidade.toLowerCase() !== "brasil";
+
   const shouldShowError = (field) => touched[field] && errors[field];
+  const inputErrorClass = (field) =>
+    shouldShowError(field) ? "border-destructive focus-visible:ring-destructive" : "";
 
   return (
-    <form onSubmit={onSubmit} className="grid">
-      <label>
-        {t("form.category")} *
-        <select name="categoria" value={form.categoria} onChange={onChange} required>
+    <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
+      <div className="field-stack">
+        <Label htmlFor="categoria">{t("form.category")} *</Label>
+        <Select id="categoria" name="categoria" value={form.categoria} onChange={onChange} required>
           {categoryOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {t(option.labelKey)}
             </option>
           ))}
-        </select>
-      </label>
+        </Select>
+      </div>
 
       {commonFields.map((fieldName) => (
-        <label key={fieldName}>
-          {getFieldLabel(fieldName)} *
+        <div key={fieldName} className="field-stack">
+          <Label htmlFor={fieldName}>{getFieldLabel(fieldName)} *</Label>
           {fieldName === "uf" ? (
-            <select
+            <Select
+              id={fieldName}
               name={fieldName}
               value={form[fieldName]}
               onChange={onChange}
               onBlur={onBlur}
-              className={shouldShowError(fieldName) ? "input-error" : ""}
+              className={inputErrorClass(fieldName)}
               required={!isInternationalVisitor}
             >
               <option value="">{t("form.selectOne")}</option>
@@ -81,129 +109,58 @@ export default function CredenciadoForm({
                   {stateCode}
                 </option>
               ))}
-            </select>
+            </Select>
           ) : (
-            <input
+            <Input
+              id={fieldName}
               name={fieldName}
               value={form[fieldName]}
               onChange={onChange}
               onBlur={onBlur}
               required
-              className={shouldShowError(fieldName) ? "input-error" : ""}
+              className={inputErrorClass(fieldName)}
             />
           )}
-          {shouldShowError(fieldName) && (
-            <small className="field-error">{t(errors[fieldName])}</small>
-          )}
-        </label>
+          <FieldError show={shouldShowError(fieldName)} message={errors[fieldName]} />
+        </div>
       ))}
 
-      <label>
-        {getFieldLabel("cpf")}
-        <input
+      <div className="field-stack">
+        <Label htmlFor="cpf">{getFieldLabel("cpf")}</Label>
+        <Input
+          id="cpf"
           name="cpf"
           value={form.cpf}
           onChange={onChange}
           onBlur={onBlur}
-          className={shouldShowError("cpf") ? "input-error" : ""}
+          className={inputErrorClass("cpf")}
         />
-        {shouldShowError("cpf") && <small className="field-error">{t(errors.cpf)}</small>}
-      </label>
+        <FieldError show={shouldShowError("cpf")} message={errors.cpf} />
+      </div>
 
-      <label>
-        {getFieldLabel("cnpj")}
-        <input
+      <div className="field-stack">
+        <Label htmlFor="cnpj">{getFieldLabel("cnpj")}</Label>
+        <Input
+          id="cnpj"
           name="cnpj"
           value={form.cnpj}
           onChange={onChange}
           onBlur={onBlur}
-          className={shouldShowError("cnpj") ? "input-error" : ""}
+          className={inputErrorClass("cnpj")}
         />
-        {shouldShowError("cnpj") && <small className="field-error">{t(errors.cnpj)}</small>}
-      </label>
-
-      <label>
-        {getFieldLabel("combustivel")} *
-        <select
-          name="combustivel"
-          value={form.combustivel}
-          onChange={onChange}
-          onBlur={onBlur}
-          className={shouldShowError("combustivel") ? "input-error" : ""}
-        >
-          <option value="NAO_INFORMADO">{t("fuel.notInformed")}</option>
-          <option value="GASOLINA">{t("fuel.gasoline")}</option>
-          <option value="ALCOOL">{t("fuel.ethanol")}</option>
-          <option value="DIESEL">{t("fuel.diesel")}</option>
-          <option value="ELETRICO">{t("fuel.electric")}</option>
-        </select>
-        {shouldShowError("combustivel") && (
-          <small className="field-error">{t(errors.combustivel)}</small>
-        )}
-      </label>
-
-      <label>
-        {getFieldLabel("cidadeOrigem")} *
-        <input
-          name="cidadeOrigem"
-          value={form.cidadeOrigem}
-          onChange={onChange}
-          onBlur={onBlur}
-          list="reference-city-list"
-          className={shouldShowError("cidadeOrigem") ? "input-error" : ""}
-        />
-        <datalist id="reference-city-list">
-          {Object.keys(REFERENCE_CITY_DISTANCES_KM).map((city) => (
-            <option key={city} value={city} />
-          ))}
-        </datalist>
-        {shouldShowError("cidadeOrigem") && (
-          <small className="field-error">{t(errors.cidadeOrigem)}</small>
-        )}
-      </label>
-
-      <label>
-        {getFieldLabel("distanciaKm")}
-        <input
-          type="number"
-          min="0"
-          step="0.1"
-          name="distanciaKm"
-          value={form.distanciaKm || resolveDistanceFromCity(form.cidadeOrigem || form.municipio)}
-          readOnly
-          className={shouldShowError("distanciaKm") ? "input-error" : ""}
-        />
-        {shouldShowError("distanciaKm") && (
-          <small className="field-error">{t(errors.distanciaKm)}</small>
-        )}
-        <small className="hint-text">{t("form.distanceHint")}</small>
-      </label>
-
-      <div className="detail-field full-span">
-        <span>{getFieldLabel("pegadaCarbonoEstimada")}</span>
-        <strong>
-          {(() => {
-            const estimate = calculateCarbonEstimate({
-              cidadeOrigem: form.cidadeOrigem || form.municipio,
-              combustivel: form.combustivel,
-              distanciaKm: form.distanciaKm
-            });
-            if (estimate === null) {
-              return t("form.carbonUnknown");
-            }
-            return `${estimate.toFixed(3)} kg CO2e`;
-          })()}
-        </strong>
-        <small>{t("form.carbonHelper")}</small>
+        <FieldError show={shouldShowError("cnpj")} message={errors.cnpj} />
       </div>
 
-      <p className="hint-text full-span">{getDocumentHintByCategory(form.categoria)}</p>
-      {errors.documento && <p className="error full-span">{t(errors.documento)}</p>}
+      <p className="md:col-span-2 text-xs text-muted-foreground">{getDocumentHintByCategory(form.categoria)}</p>
+      {errors.documento && <p className="md:col-span-2 text-sm font-medium text-destructive">{t(errors.documento)}</p>}
 
       {extraFields.map((fieldName) => (
-        <label key={fieldName}>
-          {getFieldLabel(fieldName)} {fieldName !== "siteEmpresa" ? "*" : `(${t("common.optional")})`}
-          <input
+        <div key={fieldName} className="field-stack">
+          <Label htmlFor={fieldName}>
+            {getFieldLabel(fieldName)} {fieldName !== "siteEmpresa" ? "*" : `(${t("common.optional")})`}
+          </Label>
+          <Input
+            id={fieldName}
             name={fieldName}
             value={form[fieldName]}
             onChange={onChange}
@@ -216,20 +173,24 @@ export default function CredenciadoForm({
             placeholder={
               fieldName === "nacionalidade" || fieldName === "nacionalidadeEmpresa" ? "Brasil" : undefined
             }
-            className={shouldShowError(fieldName) ? "input-error" : ""}
+            className={inputErrorClass(fieldName)}
           />
-          {shouldShowError(fieldName) && (
-            <small className="field-error">{t(errors[fieldName])}</small>
-          )}
-        </label>
+          <FieldError show={shouldShowError(fieldName)} message={errors[fieldName]} />
+        </div>
       ))}
 
-      <label className="checkbox">
-        <input type="checkbox" name="pcd" checked={form.pcd} onChange={onChange} />
+      <label className="md:col-span-2 flex items-center gap-2 text-sm text-foreground">
+        <input
+          type="checkbox"
+          name="pcd"
+          checked={form.pcd}
+          onChange={onChange}
+          className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+        />
         {getFieldLabel("pcd")}
       </label>
 
-      <label className="checkbox">
+      <label className="md:col-span-2 flex items-center gap-2 text-sm text-foreground">
         <input
           type="checkbox"
           name="aceitouLgpd"
@@ -237,29 +198,34 @@ export default function CredenciadoForm({
           onChange={onChange}
           onBlur={onBlur}
           required
+          className={cn(
+            "h-4 w-4 rounded border-input text-primary focus:ring-ring",
+            shouldShowError("aceitouLgpd") ? "border-destructive" : ""
+          )}
         />
         {t("form.privacyConsentLabel")}
       </label>
 
-      <label className="checkbox">
+      <label className="md:col-span-2 flex items-center gap-2 text-sm text-foreground">
         <input
           type="checkbox"
           name="aceitouCompartilhamentoComExpositores"
           checked={form.aceitouCompartilhamentoComExpositores}
           onChange={onChange}
+          className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
         />
         {getFieldLabel("aceitouCompartilhamentoComExpositores")}
       </label>
 
-      {shouldShowError("aceitouLgpd") && (
-        <small className="field-error full-span">{t(errors.aceitouLgpd)}</small>
-      )}
+      <FieldError show={shouldShowError("aceitouLgpd")} message={errors.aceitouLgpd} />
 
-      <p className="lgpd-text">{t("form.privacyDisclaimer")}</p>
+      <p className="md:col-span-2 rounded-md border bg-zinc-50 p-3 text-xs text-muted-foreground">
+        {t("form.privacyDisclaimer")}
+      </p>
 
-      <button type="submit" disabled={saving} className="full-span">
+      <Button type="submit" disabled={saving} className="md:col-span-2">
         {saving ? t("form.submitting") : t("form.submit")}
-      </button>
+      </Button>
     </form>
   );
 }

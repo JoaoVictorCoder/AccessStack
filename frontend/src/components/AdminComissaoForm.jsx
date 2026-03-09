@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { formFieldLabelKeyByField } from "../constants/formConfig";
 import { t } from "../locales";
+import { Alert, AlertDescription } from "./ui/alert";
+import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 const initialState = {
   nomeCompleto: "",
@@ -32,17 +43,15 @@ export default function AdminComissaoForm({ onCreate, loading, onClose, error })
   }
 
   return (
-    <div className="modal-backdrop">
-      <section className="card modal-card">
-        <div className="modal-header">
-          <h3>{t("adminForm.addGovernanceTitle")}</h3>
-          <button type="button" onClick={onClose}>
-            {t("adminForm.close")}
-          </button>
-        </div>
+    <Dialog open onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("adminForm.addGovernanceTitle")}</DialogTitle>
+          <DialogDescription>{t("auth.admin.subtitle")}</DialogDescription>
+        </DialogHeader>
 
         <form
-          className="grid"
+          className="grid gap-3 md:grid-cols-2"
           onSubmit={(event) => {
             event.preventDefault();
             onCreate(form);
@@ -59,46 +68,58 @@ export default function AdminComissaoForm({ onCreate, loading, onClose, error })
             "nacionalidade",
             "funcaoCargo"
           ].map((fieldName) => (
-            <label key={fieldName}>
-              {getFieldLabel(fieldName)}
-              <input
+            <div key={fieldName} className="field-stack">
+              <Label htmlFor={`governance-${fieldName}`}>{getFieldLabel(fieldName)}</Label>
+              <Input
+                id={`governance-${fieldName}`}
                 name={fieldName}
                 value={form[fieldName]}
                 onChange={handleChange}
                 required
                 maxLength={fieldName === "uf" ? 2 : undefined}
               />
-            </label>
+            </div>
           ))}
 
-          <label className="checkbox">
+          <label className="md:col-span-2 flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               name="pcd"
               checked={form.pcd}
               onChange={handleChange}
+              className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
             />
             {t("form.pcd")}
           </label>
 
-          <label className="checkbox">
+          <label className="md:col-span-2 flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               name="aceitouLgpd"
               checked={form.aceitouLgpd}
               onChange={handleChange}
               required
+              className="h-4 w-4 rounded border-input text-primary focus:ring-ring"
             />
             {t("adminForm.privacyRecord")}
           </label>
 
-          <button type="submit" disabled={loading}>
-            {loading ? t("adminForm.saving") : t("adminForm.saveMember")}
-          </button>
+          <div className="md:col-span-2 flex flex-wrap justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              {t("adminForm.close")}
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? t("adminForm.saving") : t("adminForm.saveMember")}
+            </Button>
+          </div>
         </form>
 
-        {error && <p className="error">{error}</p>}
-      </section>
-    </div>
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

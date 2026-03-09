@@ -5,15 +5,13 @@ import {
   getPublicCredentialQr
 } from "../api/platformApi";
 import CredenciadoForm from "../components/CredenciadoForm";
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { publicBaseForm } from "../constants/formConfig";
 import { t } from "../locales";
-import {
-  formatCellphone,
-  formatCnpj,
-  formatCpf,
-  resolveDistanceFromCity,
-  validatePublicParticipantForm
-} from "../utils/validation";
+import { formatCellphone, formatCnpj, formatCpf, validatePublicParticipantForm } from "../utils/validation";
 
 const touchedFieldsOnSubmit = {
   nomeCompleto: true,
@@ -23,9 +21,6 @@ const touchedFieldsOnSubmit = {
   email: true,
   municipio: true,
   uf: true,
-  cidadeOrigem: true,
-  combustivel: true,
-  distanciaKm: true,
   nacionalidade: true,
   nacionalidadeEmpresa: true,
   aceitouLgpd: true,
@@ -46,6 +41,52 @@ function formatFieldValue(fieldName, value, type, checked) {
   return value;
 }
 
+function CredentialSummary({ participant, qrDataUrl }) {
+  if (!participant?.credencial?.id) {
+    return <p className="text-sm text-muted-foreground">{t("public.credentialPlaceholder")}</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <dl className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-md border bg-zinc-50 p-3">
+          <dt className="text-xs text-muted-foreground">{t("public.categoryLabel")}</dt>
+          <dd className="text-sm font-semibold">{participant.categoria}</dd>
+        </div>
+        <div className="rounded-md border bg-zinc-50 p-3">
+          <dt className="text-xs text-muted-foreground">{t("public.registrationStatus")}</dt>
+          <dd className="text-sm font-semibold">{participant.statusCredenciamento}</dd>
+        </div>
+        <div className="rounded-md border bg-zinc-50 p-3">
+          <dt className="text-xs text-muted-foreground">{t("public.credentialCode")}</dt>
+          <dd className="text-sm font-semibold">{participant.credencial?.codigoUnico || "-"}</dd>
+        </div>
+        <div className="rounded-md border bg-zinc-50 p-3">
+          <dt className="text-xs text-muted-foreground">{t("public.credentialPdf")}</dt>
+          <dd>
+            <Button asChild variant="outline" size="sm">
+              <a target="_blank" rel="noreferrer" href={getPublicCredentialPdfUrl(participant.credencial.id)}>
+                {t("common.openPdf")}
+              </a>
+            </Button>
+          </dd>
+        </div>
+      </dl>
+
+      {qrDataUrl && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">{t("public.qrTitle")}</h3>
+          <img
+            src={qrDataUrl}
+            alt={t("public.qrAlt")}
+            className="max-w-[240px] rounded-md border bg-card p-2"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PublicAreaPage() {
   const [form, setForm] = useState(publicBaseForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,28 +102,13 @@ export default function PublicAreaPage() {
     const nextValue = formatFieldValue(name, value, type, checked);
 
     setForm((currentForm) => {
-      const nextForm = {
-        ...currentForm,
-        [name]: nextValue
-      };
-
-      if (name === "combustivel") {
-        nextForm.tipoCombustivel = nextValue;
-      }
-      if (name === "cidadeOrigem") {
-        nextForm.distanciaKm = String(resolveDistanceFromCity(nextValue));
-      }
-      if (name === "municipio" && !nextForm.cidadeOrigem) {
-        nextForm.distanciaKm = String(resolveDistanceFromCity(nextValue));
-      }
-
+      const nextForm = { ...currentForm, [name]: nextValue };
       const { errors } = validatePublicParticipantForm(nextForm);
       setFieldErrors((currentErrors) => ({
         ...currentErrors,
         [name]: errors[name],
         documento: errors.documento
       }));
-
       return nextForm;
     });
   }
@@ -131,82 +157,69 @@ export default function PublicAreaPage() {
   }
 
   return (
-    <main className="public-layout">
-      <section className="public-hero card">
-        <div className="hero-top">
-          <span className="hero-chip">{t("public.heroChipPrimary")}</span>
-          <span className="hero-chip muted">{t("public.heroChipSecondary")}</span>
-        </div>
-        <h2>{t("public.heroTitle")}</h2>
-        <p>{t("public.heroText")}</p>
-        <div className="hero-meta">
-          <strong>{t("public.heroMetaTitle")}</strong>
-          <span>{t("public.heroMetaSubtitle")}</span>
-        </div>
-      </section>
+    <main className="grid gap-4 xl:grid-cols-[minmax(320px,34%)_minmax(0,66%)]">
+      <Card className="border-zinc-200 bg-zinc-900 text-zinc-50">
+        <CardHeader className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary" className="bg-zinc-100 text-zinc-900">
+              {t("public.heroChipPrimary")}
+            </Badge>
+            <Badge variant="outline" className="border-zinc-500 text-zinc-200">
+              {t("public.heroChipSecondary")}
+            </Badge>
+          </div>
+          <CardTitle className="text-zinc-50">{t("public.heroTitle")}</CardTitle>
+          <CardDescription className="text-zinc-300">{t("public.heroText")}</CardDescription>
+        </CardHeader>
+        <CardContent className="mt-auto space-y-1">
+          <p className="text-sm font-semibold text-zinc-100">{t("public.heroMetaTitle")}</p>
+          <p className="text-sm text-zinc-300">{t("public.heroMetaSubtitle")}</p>
+        </CardContent>
+      </Card>
 
-      <section className="card card-elevated">
-        <h2>{t("public.sectionTitle")}</h2>
-        <p className="section-subtitle">{t("public.sectionSubtitle")}</p>
-        <CredenciadoForm
-          form={form}
-          saving={isSubmitting}
-          errors={fieldErrors}
-          touched={touchedFields}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          onSubmit={handleSubmit}
-        />
+      <Card className="border-zinc-200">
+        <CardHeader>
+          <CardTitle>{t("public.sectionTitle")}</CardTitle>
+          <CardDescription>{t("public.sectionSubtitle")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <CredenciadoForm
+            form={form}
+            saving={isSubmitting}
+            errors={fieldErrors}
+            touched={touchedFields}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onSubmit={handleSubmit}
+          />
 
-        {errorMessage && <p className="error">{errorMessage}</p>}
-        {successMessage && <p className="success">{successMessage}</p>}
-        {createdParticipant?.id && (
-          <p>{t("public.registrationId", { id: createdParticipant.id })}</p>
-        )}
-
-        <section className="public-credential">
-          <h3>{t("public.credentialSectionTitle")}</h3>
-
-          {!createdParticipant?.credencial?.id && (
-            <p className="hint-text">{t("public.credentialPlaceholder")}</p>
+          {errorMessage && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
           )}
 
-          {createdParticipant?.credencial?.id && (
-            <div className="details-grid">
-              <div className="detail-field">
-                <span>{t("public.categoryLabel")}</span>
-                <strong>{createdParticipant.categoria}</strong>
-              </div>
-              <div className="detail-field">
-                <span>{t("public.registrationStatus")}</span>
-                <strong>{createdParticipant.statusCredenciamento}</strong>
-              </div>
-              <div className="detail-field">
-                <span>{t("public.credentialCode")}</span>
-                <strong>{createdParticipant.credencial?.codigoUnico || "-"}</strong>
-              </div>
-              <div className="detail-field">
-                <span>{t("public.credentialPdf")}</span>
-                <a
-                  className="link-button"
-                  target="_blank"
-                  rel="noreferrer"
-                  href={getPublicCredentialPdfUrl(createdParticipant.credencial.id)}
-                >
-                  {t("common.openPdf")}
-                </a>
-              </div>
-            </div>
+          {successMessage && (
+            <Alert variant="success">
+              <AlertDescription>{successMessage}</AlertDescription>
+            </Alert>
           )}
 
-          {qrDataUrl && (
-            <div className="qr-section">
-              <h3>{t("public.qrTitle")}</h3>
-              <img src={qrDataUrl} alt={t("public.qrAlt")} className="qr-image" />
-            </div>
+          {createdParticipant?.id && (
+            <p className="text-sm text-muted-foreground">
+              {t("public.registrationId", { id: createdParticipant.id })}
+            </p>
           )}
-        </section>
-      </section>
+
+          <div className="space-y-3 border-t pt-4">
+            <Alert>
+              <AlertTitle>{t("public.credentialSectionTitle")}</AlertTitle>
+              <AlertDescription />
+            </Alert>
+            <CredentialSummary participant={createdParticipant} qrDataUrl={qrDataUrl} />
+          </div>
+        </CardContent>
+      </Card>
     </main>
   );
 }

@@ -7,6 +7,8 @@ RUN npm install
 
 COPY index.html ./index.html
 COPY vite.config.js ./vite.config.js
+COPY postcss.config.js ./postcss.config.js
+COPY tailwind.config.js ./tailwind.config.js
 COPY src ./src
 
 EXPOSE 5173

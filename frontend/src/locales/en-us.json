@@ -36,13 +36,6 @@
     "thirdPartyCollaborator": "Third-party collaborator",
     "governance": "Governance team"
   },
-  "fuel": {
-    "notInformed": "Not informed",
-    "gasoline": "Gasoline",
-    "ethanol": "Ethanol",
-    "diesel": "Diesel",
-    "electric": "Electric"
-  },
   "auth": {
     "email": "Email",
     "password": "Password",
@@ -118,11 +111,7 @@
     "allowedCheckIns": "Allowed check-ins",
     "deniedCheckIns": "Denied check-ins",
     "fraudSignalsTitle": "Fraud / anomaly signals",
-    "severityCount": "Severity: {severity} | Count: {count}",
-    "carbonPanelTitle": "Carbon dashboard (sample)",
-    "records": "Records",
-    "averageCo2": "Avg CO2 (kg)",
-    "averageDistance": "Avg distance (km)"
+    "severityCount": "Severity: {severity} | Count: {count}"
   },
   "adminLists": {
     "accessLogsTitle": "Access logs",
@@ -277,11 +266,6 @@
     "state": "State",
     "nationality": "Nationality",
     "companyNationality": "Organization nationality",
-    "fuelType": "Fuel type",
-    "originCity": "Origin city",
-    "fuel": "Fuel",
-    "estimatedDistanceKm": "Estimated distance to venue (km)",
-    "estimatedCarbon": "Estimated carbon footprint",
     "pcd": "Accessibility support required",
     "dataSharing": "I agree to share my contact with exhibitors/units visited",
     "companyWebsite": "Organization website",
@@ -297,9 +281,6 @@
     "documentHintCompany": "For this category, provide organization tax ID.",
     "documentHintGovernance": "For this category, provide individual tax ID.",
     "documentHintDefault": "Provide individual and/or organization tax ID according to your profile.",
-    "distanceHint": "Distance is auto-suggested from reference cities.",
-    "carbonUnknown": "Not calculated (fuel not informed)",
-    "carbonHelper": "Simplified estimate to support operational analytics.",
     "privacyConsentLabel": "I agree with the privacy terms",
     "privacyDisclaimer": "By submitting, you authorize personal data processing for registration, credential issuance and operational access control."
   },
@@ -315,13 +296,10 @@
     "email": "Enter a valid email.",
     "phone": "Enter a valid phone number.",
     "city": "Enter a valid city.",
-    "originCity": "Enter a valid origin city.",
     "state": "Select a valid state.",
     "nationality": "Enter nationality.",
     "companyNationality": "Enter organization nationality.",
     "privacyConsent": "You must accept privacy terms.",
-    "fuel": "Select a valid fuel type.",
-    "distance": "Enter a valid distance.",
     "cpf": "Invalid individual tax ID.",
     "cnpj": "Invalid organization tax ID.",
     "cnpjRequiredForCategory": "Organization tax ID is required for this category.",

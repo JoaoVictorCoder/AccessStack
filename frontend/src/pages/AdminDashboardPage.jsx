@@ -3,10 +3,10 @@ import {
   createAdminGovernanceParticipant,
   createAdminUser,
   deactivateAdminParticipant,
-  getAdminAnalyticsCarbon,
   getAdminAnalyticsFraud,
   getAdminAnalyticsOverview,
   getAdminBackupStatus,
+  getAdminParticipantById,
   listAdminAccessLogs,
   listAdminAuditLogs,
   listAdminParticipantEvents,
@@ -21,11 +21,15 @@ import {
   updateAdminParticipant,
   updateAdminUser,
   updateAdminUserActive,
-  updateAdminUserPermissions,
-  getAdminParticipantById
+  updateAdminUserPermissions
 } from "../api/platformApi";
 import AdminDashboard from "../components/AdminDashboard";
 import InternalUsersPanel from "../components/InternalUsersPanel";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Select } from "../components/ui/select";
 import { t } from "../locales";
 
 const emptyListResponse = { items: [], page: 1, totalPages: 1 };
@@ -61,169 +65,203 @@ const initialUnitReportFilters = {
 
 function AccessLogsSection({ filters, internalUsers, accessLogs, onChangeFilter, onApply }) {
   return (
-    <section className="card">
-      <h3>{t("adminLists.accessLogsTitle")}</h3>
-      <div className="grid">
-        <label>
-          {t("adminLists.operator")}
-          <select value={filters.operatorId} onChange={(event) => onChangeFilter("operatorId", event.target.value)}>
-            <option value="">{t("common.unrestricted")}</option>
-            {internalUsers.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.nome}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {t("adminLists.governanceId")}
-          <input
-            value={filters.comissaoResponsavelId}
-            onChange={(event) => onChangeFilter("comissaoResponsavelId", event.target.value)}
-          />
-        </label>
-        <label>
-          {t("adminLists.unitId")}
-          <input value={filters.standId} onChange={(event) => onChangeFilter("standId", event.target.value)} />
-        </label>
-        <label>
-          {t("adminLists.organizationId")}
-          <input
-            value={filters.empresaVinculadaId}
-            onChange={(event) => onChangeFilter("empresaVinculadaId", event.target.value)}
-          />
-        </label>
-        <label>
-          {t("adminLists.startDate")}
-          <input type="datetime-local" value={filters.dateFrom} onChange={(event) => onChangeFilter("dateFrom", event.target.value)} />
-        </label>
-        <label>
-          {t("adminLists.endDate")}
-          <input type="datetime-local" value={filters.dateTo} onChange={(event) => onChangeFilter("dateTo", event.target.value)} />
-        </label>
-        <label>
-          {t("table.category")}
-          <input value={filters.categoria} onChange={(event) => onChangeFilter("categoria", event.target.value)} />
-        </label>
-        <label>
-          {t("adminLists.result")}
-          <select value={filters.resultado} onChange={(event) => onChangeFilter("resultado", event.target.value)}>
-            <option value="">{t("common.unrestricted")}</option>
-            <option value="ALLOW">ALLOW</option>
-            <option value="DENY">DENY</option>
-          </select>
-        </label>
-      </div>
-      <div className="toolbar">
-        <button type="button" onClick={onApply}>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{t("adminLists.accessLogsTitle")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="field-stack">
+            <Label>{t("adminLists.operator")}</Label>
+            <Select value={filters.operatorId} onChange={(event) => onChangeFilter("operatorId", event.target.value)}>
+              <option value="">{t("common.unrestricted")}</option>
+              {internalUsers.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.nome}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="field-stack">
+            <Label>{t("adminLists.governanceId")}</Label>
+            <Input
+              value={filters.comissaoResponsavelId}
+              onChange={(event) => onChangeFilter("comissaoResponsavelId", event.target.value)}
+            />
+          </div>
+          <div className="field-stack">
+            <Label>{t("adminLists.unitId")}</Label>
+            <Input value={filters.standId} onChange={(event) => onChangeFilter("standId", event.target.value)} />
+          </div>
+          <div className="field-stack">
+            <Label>{t("adminLists.organizationId")}</Label>
+            <Input
+              value={filters.empresaVinculadaId}
+              onChange={(event) => onChangeFilter("empresaVinculadaId", event.target.value)}
+            />
+          </div>
+          <div className="field-stack">
+            <Label>{t("adminLists.startDate")}</Label>
+            <Input
+              type="datetime-local"
+              value={filters.dateFrom}
+              onChange={(event) => onChangeFilter("dateFrom", event.target.value)}
+            />
+          </div>
+          <div className="field-stack">
+            <Label>{t("adminLists.endDate")}</Label>
+            <Input
+              type="datetime-local"
+              value={filters.dateTo}
+              onChange={(event) => onChangeFilter("dateTo", event.target.value)}
+            />
+          </div>
+          <div className="field-stack">
+            <Label>{t("table.category")}</Label>
+            <Input value={filters.categoria} onChange={(event) => onChangeFilter("categoria", event.target.value)} />
+          </div>
+          <div className="field-stack">
+            <Label>{t("adminLists.result")}</Label>
+            <Select value={filters.resultado} onChange={(event) => onChangeFilter("resultado", event.target.value)}>
+              <option value="">{t("common.unrestricted")}</option>
+              <option value="ALLOW">ALLOW</option>
+              <option value="DENY">DENY</option>
+            </Select>
+          </div>
+        </div>
+        <Button type="button" variant="secondary" onClick={onApply}>
           {t("adminLists.applyFilters")}
-        </button>
-      </div>
-      <ul className="event-list compact">
-        {accessLogs.map((item) => (
-          <li key={item.id} className="event-item">
-            <strong>
-              {item.resultado} - {item.motivo}
-            </strong>
-            <span>
-              {item.nomeCredenciado || t("adminDashboard.noLinkedParticipant")} | {t("adminLists.operator")}: {item.operatorNome || "-"} ({item.operatorEmail || "-"})
-            </span>
-            <small>
-              {t("adminLists.unit")}: {item.standName || "-"} ({item.standId || "-"}) | {t("adminLists.organization")}: {item.empresaVinculadaNome || item.empresaNome || "-"} | {t("adminLists.governance")}:{" "}
-              {item.comissaoResponsavelNome || item.comissaoResponsavelId || "-"}
-            </small>
-            <small>{new Date(item.createdAt).toLocaleString()}</small>
-          </li>
-        ))}
-      </ul>
-    </section>
+        </Button>
+        <ul className="max-h-[300px] space-y-2 overflow-auto">
+          {accessLogs.map((item) => (
+            <li key={item.id} className="rounded-md border bg-zinc-50 p-3">
+              <p className="text-sm font-medium">
+                {item.resultado} - {item.motivo}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {item.nomeCredenciado || t("adminDashboard.noLinkedParticipant")} | {t("adminLists.operator")}:{" "}
+                {item.operatorNome || "-"} ({item.operatorEmail || "-"})
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("adminLists.unit")}: {item.standName || "-"} ({item.standId || "-"}) | {t("adminLists.organization")}:{" "}
+                {item.empresaVinculadaNome || item.empresaNome || "-"} | {t("adminLists.governance")}:{" "}
+                {item.comissaoResponsavelNome || item.comissaoResponsavelId || "-"}
+              </p>
+              <p className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString()}</p>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 
 function UnitVisitorsSection({ filters, internalUsers, reportItems, onChangeFilter, onApply }) {
   return (
-    <section className="card">
-      <h3>{t("adminLists.visitorsByUnitTitle")}</h3>
-      <div className="grid">
-        <label>
-          {t("adminLists.unitId")}
-          <input value={filters.standId} onChange={(event) => onChangeFilter("standId", event.target.value)} />
-        </label>
-        <label>
-          {t("adminLists.operator")}
-          <select value={filters.operatorId} onChange={(event) => onChangeFilter("operatorId", event.target.value)}>
-            <option value="">{t("common.unrestricted")}</option>
-            {internalUsers.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.nome}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {t("adminLists.governanceId")}
-          <input
-            value={filters.comissaoResponsavelId}
-            onChange={(event) => onChangeFilter("comissaoResponsavelId", event.target.value)}
-          />
-        </label>
-        <label>
-          {t("adminLists.organizationId")}
-          <input
-            value={filters.empresaVinculadaId}
-            onChange={(event) => onChangeFilter("empresaVinculadaId", event.target.value)}
-          />
-        </label>
-        <label>
-          {t("adminLists.startDate")}
-          <input type="datetime-local" value={filters.dateFrom} onChange={(event) => onChangeFilter("dateFrom", event.target.value)} />
-        </label>
-        <label>
-          {t("adminLists.endDate")}
-          <input type="datetime-local" value={filters.dateTo} onChange={(event) => onChangeFilter("dateTo", event.target.value)} />
-        </label>
-        <label>
-          {t("table.category")}
-          <input value={filters.categoria} onChange={(event) => onChangeFilter("categoria", event.target.value)} />
-        </label>
-      </div>
-      <div className="toolbar">
-        <button type="button" onClick={onApply}>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{t("adminLists.visitorsByUnitTitle")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="field-stack">
+            <Label>{t("adminLists.unitId")}</Label>
+            <Input value={filters.standId} onChange={(event) => onChangeFilter("standId", event.target.value)} />
+          </div>
+          <div className="field-stack">
+            <Label>{t("adminLists.operator")}</Label>
+            <Select value={filters.operatorId} onChange={(event) => onChangeFilter("operatorId", event.target.value)}>
+              <option value="">{t("common.unrestricted")}</option>
+              {internalUsers.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.nome}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="field-stack">
+            <Label>{t("adminLists.governanceId")}</Label>
+            <Input
+              value={filters.comissaoResponsavelId}
+              onChange={(event) => onChangeFilter("comissaoResponsavelId", event.target.value)}
+            />
+          </div>
+          <div className="field-stack">
+            <Label>{t("adminLists.organizationId")}</Label>
+            <Input
+              value={filters.empresaVinculadaId}
+              onChange={(event) => onChangeFilter("empresaVinculadaId", event.target.value)}
+            />
+          </div>
+          <div className="field-stack">
+            <Label>{t("adminLists.startDate")}</Label>
+            <Input
+              type="datetime-local"
+              value={filters.dateFrom}
+              onChange={(event) => onChangeFilter("dateFrom", event.target.value)}
+            />
+          </div>
+          <div className="field-stack">
+            <Label>{t("adminLists.endDate")}</Label>
+            <Input
+              type="datetime-local"
+              value={filters.dateTo}
+              onChange={(event) => onChangeFilter("dateTo", event.target.value)}
+            />
+          </div>
+          <div className="field-stack">
+            <Label>{t("table.category")}</Label>
+            <Input value={filters.categoria} onChange={(event) => onChangeFilter("categoria", event.target.value)} />
+          </div>
+        </div>
+        <Button type="button" variant="secondary" onClick={onApply}>
           {t("adminLists.updateReport")}
-        </button>
-      </div>
-      <ul className="event-list compact">
-        {reportItems.map((item) => (
-          <li key={item.accessAttemptId} className="event-item">
-            <strong>
-              {item.visitor?.nomeCompleto || "-"} | {item.visitor?.categoria || "-"}
-            </strong>
-            <span>
-              {t("adminLists.unit")}: {item.standName || "-"} ({item.standId || "-"}) | {t("adminLists.organization")}: {item.empresaVinculadaNome || item.empresaNome || "-"}
-            </span>
-            <small>
-              {t("adminLists.contact")}: {item.visitor?.email || "-"} | {item.visitor?.celular || "-"} | {t("adminLists.sharingConsent")}:{" "}
-              {item.visitor?.aceitouCompartilhamentoComExpositores ? t("common.yes") : t("common.no")}
-            </small>
-            <small>{new Date(item.createdAt).toLocaleString()}</small>
-          </li>
-        ))}
-      </ul>
-    </section>
+        </Button>
+        <ul className="max-h-[280px] space-y-2 overflow-auto">
+          {reportItems.map((item) => (
+            <li key={item.accessAttemptId} className="rounded-md border bg-zinc-50 p-3">
+              <p className="text-sm font-medium">
+                {item.visitor?.nomeCompleto || "-"} | {item.visitor?.categoria || "-"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t("adminLists.unit")}: {item.standName || "-"} ({item.standId || "-"}) | {t("adminLists.organization")}:{" "}
+                {item.empresaVinculadaNome || item.empresaNome || "-"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("adminLists.contact")}: {item.visitor?.email || "-"} | {item.visitor?.celular || "-"} |{" "}
+                {t("adminLists.sharingConsent")}:{" "}
+                {item.visitor?.aceitouCompartilhamentoComExpositores ? t("common.yes") : t("common.no")}
+              </p>
+              <p className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString()}</p>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 
 function BackupSection({ backupStatus, onGenerate }) {
   return (
-    <section className="card">
-      <h3>{t("adminLists.backupTitle")}</h3>
-      <p>{t("adminLists.backupDirectory", { value: backupStatus?.backupDir || "-" })}</p>
-      <p>{t("adminLists.backupTotalFiles", { value: backupStatus?.totalFiles ?? 0 })}</p>
-      <p>{t("adminLists.backupLatest", { value: backupStatus?.latestFile || t("common.none") })}</p>
-      <button type="button" onClick={onGenerate}>
-        {t("adminLists.generateBackup")}
-      </button>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{t("adminLists.backupTitle")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          {t("adminLists.backupDirectory", { value: backupStatus?.backupDir || "-" })}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {t("adminLists.backupTotalFiles", { value: backupStatus?.totalFiles ?? 0 })}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {t("adminLists.backupLatest", { value: backupStatus?.latestFile || t("common.none") })}
+        </p>
+        <Button type="button" onClick={onGenerate}>
+          {t("adminLists.generateBackup")}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -233,7 +271,6 @@ export default function AdminDashboardPage({ admin, onLogout }) {
   const [auditLogs, setAuditLogs] = useState([]);
   const [analyticsOverview, setAnalyticsOverview] = useState(null);
   const [analyticsFraud, setAnalyticsFraud] = useState([]);
-  const [analyticsCarbon, setAnalyticsCarbon] = useState(null);
   const [checkInResult, setCheckInResult] = useState(null);
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -270,12 +307,11 @@ export default function AdminDashboardPage({ admin, onLogout }) {
         setAuditLogs([]);
         setAnalyticsOverview(null);
         setAnalyticsFraud([]);
-        setAnalyticsCarbon(null);
         setBackupStatus(null);
         return;
       }
 
-      const [participantsData, eventsData, logsData, overviewData, fraudData, carbonData] = await Promise.all([
+      const [participantsData, eventsData, logsData, overviewData, fraudData] = await Promise.all([
         listAdminParticipants({
           ...activeFilters,
           category: activeFilters.categoria
@@ -283,8 +319,7 @@ export default function AdminDashboardPage({ admin, onLogout }) {
         listAdminSystemEvents({ limit: 60 }),
         listAdminAuditLogs({ page: 1, pageSize: 40 }),
         getAdminAnalyticsOverview(),
-        getAdminAnalyticsFraud(),
-        getAdminAnalyticsCarbon()
+        getAdminAnalyticsFraud()
       ]);
 
       setListResponse(participantsData);
@@ -292,7 +327,6 @@ export default function AdminDashboardPage({ admin, onLogout }) {
       setAuditLogs(logsData.items || []);
       setAnalyticsOverview(overviewData);
       setAnalyticsFraud(fraudData);
-      setAnalyticsCarbon(carbonData);
 
       if (admin?.role === "MASTER_ADMIN") {
         const [usersData, accessLogsData, backupData, reportData] = await Promise.all([
@@ -338,7 +372,7 @@ export default function AdminDashboardPage({ admin, onLogout }) {
   }
 
   return (
-    <main className="single-page">
+    <main className="space-y-4">
       <AdminDashboard
         admin={admin}
         listResponse={listResponse}
@@ -348,9 +382,7 @@ export default function AdminDashboardPage({ admin, onLogout }) {
         filters={filters}
         onChangeFilters={(nextFilters) => {
           setFilters(nextFilters);
-          if (nextFilters.search !== filters.search) {
-            loadData(nextFilters);
-          }
+          if (nextFilters.search !== filters.search) loadData(nextFilters);
         }}
         onReload={() => loadData(filters)}
         onOpenDetails={async (participantId) => {
@@ -434,7 +466,6 @@ export default function AdminDashboardPage({ admin, onLogout }) {
         checkInLoading={checkInLoading}
         analyticsOverview={analyticsOverview}
         analyticsFraud={analyticsFraud}
-        analyticsDescarbonizacao={analyticsCarbon}
       />
 
       {(admin?.role === "MASTER_ADMIN" || admin?.role === "COMISSAO_ORGANIZADORA") && (

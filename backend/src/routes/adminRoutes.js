@@ -24,7 +24,6 @@ import {
   analyticsFraudHandler,
   analyticsOverviewHandler
 } from "../controllers/analyticsController.js";
-import { getDescarbonizacaoAdminHandler } from "../controllers/descarbonizacaoController.js";
 import {
   createInternalUserHandler,
   listInternalUsersHandler,
@@ -181,11 +180,6 @@ adminRouter.get(
   "/analytics/fraud",
   asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.ADMIN, AdminRole.SYSTEM])),
   asyncHandler(analyticsFraudHandler)
-);
-adminRouter.get(
-  "/analytics/descarbonizacao",
-  asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.ADMIN, AdminRole.SYSTEM])),
-  asyncHandler(getDescarbonizacaoAdminHandler)
 );
 
 adminRouter.get(

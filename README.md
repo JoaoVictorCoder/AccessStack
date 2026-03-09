@@ -21,7 +21,7 @@ It can be used as a base for:
 
 ## Tech Stack
 
-- Frontend: React + Vite
+- Frontend: React + Vite + Tailwind CSS + ShadCN UI (zinc theme)
 - Backend: Node.js + Express
 - Database: PostgreSQL + Prisma
 - Documents: PDFKit + QRCode
@@ -101,6 +101,12 @@ npm run dev
 
 Frontend will run at `http://localhost:5173`.
 
+Frontend design system:
+- Tailwind config: `frontend/tailwind.config.js`
+- Global theme tokens: `frontend/src/styles.css`
+- ShadCN metadata: `frontend/components.json`
+- Reusable UI primitives: `frontend/src/components/ui/*`
+
 ## Quick Start (Docker)
 
 ```bash
@@ -161,6 +167,22 @@ Services:
 - Security and session behavior:
   - `backend/src/config/auth.js`
   - `backend/src/middlewares/*`
+
+### UI / Design System
+
+- Use shared primitives from `frontend/src/components/ui/*` before creating custom controls.
+- Keep zinc palette tokens in `frontend/src/styles.css` (`--background`, `--card`, `--primary`, etc.).
+- For new screens:
+  1. Compose layout with `Card`, `Button`, `Input`, `Select`, `Alert`, `Table`.
+  2. Reuse spacing utilities (`page-shell`, `section-stack`, `field-stack`) or Tailwind utilities.
+  3. Keep semantic colors only for status feedback (success/warning/destructive).
+
+### Add New ShadCN Components
+
+If you need additional components from ShadCN:
+1. Generate or add the component under `frontend/src/components/ui/`.
+2. Reuse `cn` utility from `frontend/src/lib/utils.js`.
+3. Keep tokens CSS-variable based so the zinc theme remains consistent.
 
 ## API Overview
 

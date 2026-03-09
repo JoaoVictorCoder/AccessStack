@@ -36,13 +36,6 @@
     "thirdPartyCollaborator": "Colaborador terceirizado",
     "governance": "Comissao organizadora"
   },
-  "fuel": {
-    "notInformed": "Nao informado",
-    "gasoline": "Gasolina",
-    "ethanol": "Alcool",
-    "diesel": "Diesel",
-    "electric": "Eletrico"
-  },
   "auth": {
     "email": "E-mail",
     "password": "Senha",
@@ -118,11 +111,7 @@
     "allowedCheckIns": "Check-ins permitidos",
     "deniedCheckIns": "Check-ins negados",
     "fraudSignalsTitle": "Sinais de fraude / anomalia",
-    "severityCount": "Severidade: {severity} | Quantidade: {count}",
-    "carbonPanelTitle": "Painel de carbono (exemplo)",
-    "records": "Registros",
-    "averageCo2": "Media CO2 (kg)",
-    "averageDistance": "Media distancia (km)"
+    "severityCount": "Severidade: {severity} | Quantidade: {count}"
   },
   "adminLists": {
     "accessLogsTitle": "Logs de acesso",
@@ -277,11 +266,6 @@
     "state": "UF",
     "nationality": "Nacionalidade",
     "companyNationality": "Nacionalidade da empresa",
-    "fuelType": "Tipo de combustivel",
-    "originCity": "Cidade de origem",
-    "fuel": "Combustivel",
-    "estimatedDistanceKm": "Distancia estimada ate o local (km)",
-    "estimatedCarbon": "Pegada de carbono estimada",
     "pcd": "Pessoa com deficiencia (PCD)",
     "dataSharing": "Aceito compartilhar meus dados com expositores/unidades visitadas para contato posterior",
     "companyWebsite": "Site da organizacao",
@@ -297,9 +281,6 @@
     "documentHintCompany": "Para esta categoria, informe CNPJ.",
     "documentHintGovernance": "Para esta categoria, informe CPF.",
     "documentHintDefault": "Informe CPF e/ou CNPJ conforme seu perfil.",
-    "distanceHint": "Distancia sugerida automaticamente com base em cidades de referencia.",
-    "carbonUnknown": "Nao calculada (combustivel nao informado)",
-    "carbonHelper": "Estimativa simplificada para apoiar analises operacionais.",
     "privacyConsentLabel": "Aceito os termos de privacidade",
     "privacyDisclaimer": "Ao enviar, voce autoriza o tratamento dos seus dados para registro, emissao de credencial e controle operacional de acesso."
   },
@@ -315,13 +296,10 @@
     "email": "Informe um email valido.",
     "phone": "Informe um telefone valido.",
     "city": "Informe a cidade.",
-    "originCity": "Informe a cidade de origem.",
     "state": "Selecione uma UF valida.",
     "nationality": "Informe a nacionalidade.",
     "companyNationality": "Informe a nacionalidade da organizacao.",
     "privacyConsent": "Voce precisa aceitar os termos de privacidade.",
-    "fuel": "Selecione um combustivel valido.",
-    "distance": "Informe uma distancia valida.",
     "cpf": "CPF invalido.",
     "cnpj": "CNPJ invalido.",
     "cnpjRequiredForCategory": "CNPJ obrigatorio para esta categoria.",
