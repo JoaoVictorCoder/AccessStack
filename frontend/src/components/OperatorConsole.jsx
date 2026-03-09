@@ -32,6 +32,48 @@ function decodeCodigoFromQrText(text) {
   return trimmed;
 }
 
+function buildVideoCandidates(videoDevices = []) {
+  const rearDevices = videoDevices.filter((device) =>
+    /back|rear|environment|traseira|tras|externa/i.test(device.label || "")
+  );
+  const frontDevices = videoDevices.filter((device) =>
+    /front|user|frontal|selfie/i.test(device.label || "")
+  );
+  const remainingDevices = videoDevices.filter(
+    (device) => !rearDevices.includes(device) && !frontDevices.includes(device)
+  );
+
+  const orderedDevices = [...rearDevices, ...remainingDevices, ...frontDevices];
+
+  return [
+    ...orderedDevices.map((device) => ({
+      video: {
+        deviceId: { exact: device.deviceId },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    })),
+    {
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    },
+    {
+      video: {
+        facingMode: { ideal: "user" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    },
+    { video: true, audio: false }
+  ];
+}
+
 export default function OperatorConsole({ operator, onValidate, history, loading }) {
   const [codigoUnico, setCodigoUnico] = useState("");
   const [observacaoOperacional, setObservacaoOperacional] = useState("");
@@ -66,37 +108,63 @@ export default function OperatorConsole({ operator, onValidate, history, loading
     setScanStatus("idle");
   }
 
+  async function waitForVideoReady(videoElement) {
+    if ((videoElement.videoWidth || 0) > 0 && (videoElement.videoHeight || 0) > 0) {
+      return;
+    }
+
+    await new Promise((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        cleanup();
+        reject(new Error("video_not_ready"));
+      }, 2500);
+
+      function cleanup() {
+        window.clearTimeout(timeoutId);
+        videoElement.removeEventListener("loadedmetadata", handleReady);
+        videoElement.removeEventListener("canplay", handleReady);
+        videoElement.removeEventListener("playing", handleReady);
+      }
+
+      function handleReady() {
+        if ((videoElement.videoWidth || 0) > 0 && (videoElement.videoHeight || 0) > 0) {
+          cleanup();
+          resolve();
+        }
+      }
+
+      videoElement.addEventListener("loadedmetadata", handleReady);
+      videoElement.addEventListener("canplay", handleReady);
+      videoElement.addEventListener("playing", handleReady);
+    });
+  }
+
   async function openVideoWithFallback() {
-    const candidates = [
-      {
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      },
-      {
-        video: {
-          facingMode: { ideal: "user" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      },
-      { video: true, audio: false }
-    ];
+    const videoDevices = navigator.mediaDevices?.enumerateDevices
+      ? (await navigator.mediaDevices.enumerateDevices()).filter(
+          (device) => device.kind === "videoinput"
+        )
+      : [];
+    const candidates = buildVideoCandidates(videoDevices);
 
     let lastError = null;
     for (const constraints of candidates) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         if (!videoRef.current) return stream;
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        await new Promise((resolve) => window.setTimeout(resolve, 180));
+        const video = videoRef.current;
+        video.setAttribute("autoplay", "true");
+        video.setAttribute("muted", "true");
+        video.setAttribute("playsinline", "true");
+        video.muted = true;
+        video.defaultMuted = true;
+        video.playsInline = true;
+        video.autoplay = true;
+        video.srcObject = stream;
+        await video.play();
+        await waitForVideoReady(video);
 
-        if ((videoRef.current.videoWidth || 0) > 0 && (videoRef.current.videoHeight || 0) > 0) {
+        if ((video.videoWidth || 0) > 0 && (video.videoHeight || 0) > 0) {
           return stream;
         }
         stream.getTracks().forEach((track) => track.stop());
