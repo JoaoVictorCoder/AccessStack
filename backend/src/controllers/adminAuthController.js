@@ -4,18 +4,34 @@ import {
 } from "../config/auth.js";
 import { authenticateAdmin } from "../services/adminAuthService.js";
 import { logAdminAction } from "../services/auditLogService.js";
-import { AdminRole, mapRoleToOrganizationProfile } from "../domain/enums.js";
+import { AdminRole, AuditActorType, mapRoleToOrganizationProfile } from "../domain/enums.js";
 
 export async function loginAdminHandler(req, res) {
   const email = typeof req.body?.email === "string" ? req.body.email : "";
   const senha = typeof req.body?.senha === "string" ? req.body.senha : "";
+  const normalizedEmail = email.trim().toLowerCase();
 
-  if (!email.trim() || !senha.trim()) {
+  if (!normalizedEmail || !senha.trim()) {
     return res.status(400).json({ error: "email e senha sao obrigatorios" });
   }
 
-  const auth = await authenticateAdmin({ email, senha });
+  if (normalizedEmail.length > 254 || senha.length > 128) {
+    return res.status(400).json({ error: "credenciais com formato invalido" });
+  }
+
+  const auth = await authenticateAdmin({ email: normalizedEmail, senha });
   if (!auth) {
+    await logAdminAction({
+      actorType: AuditActorType.SYSTEM,
+      acao: "LOGIN_FALHA",
+      recurso: "AUTH",
+      detalhes: {
+        email: normalizedEmail,
+        path: req.originalUrl,
+        ip: req.ip,
+        userAgent: req.get("user-agent") || null
+      }
+    });
     return res.status(401).json({ error: "credenciais invalidas" });
   }
 

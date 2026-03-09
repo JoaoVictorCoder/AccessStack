@@ -39,8 +39,10 @@ import {
 import { backupExportHandler, backupStatusHandler } from "../controllers/backupController.js";
 import { AdminRole } from "../domain/enums.js";
 import { standVisitorsReportHandler } from "../controllers/reportController.js";
+import { createCheckInRateLimiter } from "../middlewares/rateLimitMiddleware.js";
 
 export const adminRouter = Router();
+const checkInRateLimiter = createCheckInRateLimiter();
 
 adminRouter.use(asyncHandler(requireAuth));
 
@@ -157,6 +159,7 @@ adminRouter.get(
 );
 adminRouter.post(
   "/check-in/validate",
+  checkInRateLimiter,
   asyncHandler(
     requireRoles([
       AdminRole.MASTER_ADMIN,

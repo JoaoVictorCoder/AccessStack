@@ -1,23 +1,47 @@
 import { AccessReason } from "../domain/enums.js";
 
+function truncate(value, maxLen) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  const normalized = value.trim();
+  return normalized.length > maxLen ? normalized.slice(0, maxLen) : normalized;
+}
+
+function sanitizeDeviceInfo(raw) {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+
+  const allowedKeys = ["userAgent", "platform", "language", "timezone", "screen"];
+  const clean = {};
+
+  for (const key of allowedKeys) {
+    if (typeof raw[key] === "string") {
+      clean[key] = truncate(raw[key], 200);
+    }
+  }
+
+  return Object.keys(clean).length ? clean : null;
+}
+
 export function validateCheckInRequestDTO(payload) {
   const errors = [];
-  const codigoUnico = typeof payload?.codigoUnico === "string" ? payload.codigoUnico.trim() : "";
-  const gateCode = typeof payload?.gateCode === "string" ? payload.gateCode.trim() : "";
-  const accessPoint = typeof payload?.accessPoint === "string" ? payload.accessPoint.trim() : "";
-  const deviceId = typeof payload?.deviceId === "string" ? payload.deviceId.trim() : "";
-  const deviceInfo =
-    payload?.deviceInfo && typeof payload.deviceInfo === "object" ? payload.deviceInfo : null;
-  const observacaoOperacional =
-    typeof payload?.observacaoOperacional === "string"
-      ? payload.observacaoOperacional.trim()
-      : "";
+  const codigoUnico = truncate(payload?.codigoUnico, 120);
+  const gateCode = truncate(payload?.gateCode, 80);
+  const accessPoint = truncate(payload?.accessPoint, 120);
+  const deviceId = truncate(payload?.deviceId, 120);
+  const deviceInfo = sanitizeDeviceInfo(payload?.deviceInfo);
+  const observacaoOperacional = truncate(payload?.observacaoOperacional, 500);
 
   if (!codigoUnico) {
     errors.push("codigoUnico e obrigatorio");
   }
   if (!gateCode) {
     errors.push("gateCode e obrigatorio");
+  }
+  if (codigoUnico.length < 4) {
+    errors.push("codigoUnico invalido");
   }
 
   if (errors.length) {

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
 import { requireAuth, requirePermission, requireRoles } from "../middlewares/authMiddleware.js";
 import { AdminRole, OperatorPermission } from "../domain/enums.js";
+import { createCheckInRateLimiter } from "../middlewares/rateLimitMiddleware.js";
 import {
   operatorCheckInValidateHandler,
   operatorHistoryBasicHandler,
@@ -9,6 +10,7 @@ import {
 } from "../controllers/operatorController.js";
 
 export const operatorRouter = Router();
+const checkInRateLimiter = createCheckInRateLimiter();
 
 operatorRouter.use(asyncHandler(requireAuth));
 operatorRouter.use(
@@ -26,6 +28,7 @@ operatorRouter.use(
 operatorRouter.get("/me", asyncHandler(operatorMeHandler));
 operatorRouter.post(
   "/check-in/validate",
+  checkInRateLimiter,
   asyncHandler(requirePermission(OperatorPermission.PODE_VALIDAR_ENTRADA)),
   asyncHandler(operatorCheckInValidateHandler)
 );

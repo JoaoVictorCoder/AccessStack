@@ -172,6 +172,21 @@ docker compose up --build
 - `OPERADOR_QR`: validacao de entrada em campo
 - `COMISSAO_ORGANIZADORA`: operacao e acompanhamento com escopo controlado
 
+## :shield: Variaveis de seguranca recomendadas
+
+No backend, configure as variaveis abaixo para endurecer autenticacao, cookies e protecao contra abuso:
+
+- `JWT_SECRET` (obrigatoria em producao, minimo 32 caracteres)
+- `JWT_EXPIRES_IN` (default `8h`)
+- `CORS_ORIGINS` (lista separada por virgula, ex: `https://painel.seudominio.com`)
+- `AUTH_COOKIE_SECURE=true` (cookie apenas em HTTPS)
+- `AUTH_COOKIE_SAMESITE` (`lax`, `strict` ou `none`)
+- `TRUST_PROXY=true` (quando rodar atras de proxy/load balancer)
+- `JSON_BODY_LIMIT` (default `256kb`)
+- `AUTH_RATE_LIMIT_WINDOW_MS` e `AUTH_RATE_LIMIT_MAX` (limite de tentativas de login)
+- `PUBLIC_WRITE_RATE_LIMIT_WINDOW_MS` e `PUBLIC_WRITE_RATE_LIMIT_MAX` (limite de cadastro publico)
+- `CHECKIN_RATE_LIMIT_WINDOW_MS` e `CHECKIN_RATE_LIMIT_MAX` (limite de validacoes de check-in)
+
 ## :bar_chart: Dados e regras relevantes
 
 - status de credenciamento: `CADASTRADO`, `APROVADO`, `BLOQUEADO`, `CHECKED_IN`, `INATIVO`
