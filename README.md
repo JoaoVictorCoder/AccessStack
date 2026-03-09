@@ -41,25 +41,25 @@ Principais tecnologias usadas no sistema:
 
 ```text
 Fatec-Hackathon/
-|-- frontend/
-|   `-- src/
-|       |-- api/
-|       |-- components/
-|       |-- constants/
-|       |-- utils/
-|       `-- App.jsx
-|-- backend/
-|   |-- prisma/
-|   `-- src/
-|       |-- adapters/
-|       |-- application/
-|       |-- controllers/
-|       |-- providers/
-|       |-- repositories/
-|       |-- routes/
-|       `-- services/
-`-- docs/
-    `-- MANUTENCAO.md
+├── frontend/
+│   └── src/
+│       ├── api/
+│       ├── components/
+│       ├── constants/
+│       ├── utils/
+│       └── App.jsx
+├── backend/
+│   ├── prisma/
+│   └── src/
+│       ├── adapters/
+│       ├── application/
+│       ├── controllers/
+│       ├── providers/
+│       ├── repositories/
+│       ├── routes/
+│       └── services/
+└── docs/
+    └── MANUTENCAO.md
 ```
 
 ## :gear: Funcionalidades principais
