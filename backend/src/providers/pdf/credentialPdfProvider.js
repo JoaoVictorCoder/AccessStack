@@ -122,7 +122,7 @@ function drawEventBrand(doc, x, y, w) {
   doc.circle(x + 14, y + 16, 10).lineWidth(1.2).strokeColor(COLORS.white).stroke();
   doc.fillColor(COLORS.white).font("Helvetica-Bold").fontSize(7).text("6a", x + 8, y + 12, { width: 12, align: "center" });
 
-  doc.font("Helvetica-Bold").fontSize(12).fillColor(COLORS.white).text("OPSFLOW CORE", x + 30, y + 8);
+  doc.font("Helvetica-Bold").fontSize(12).fillColor(COLORS.white).text("ACESSSTACK", x + 30, y + 8);
   doc.font("Helvetica").fontSize(8).text("OPEN SOURCE OPERATIONS PLATFORM", x + 30, y + 24, {
     width: w - 34
   });

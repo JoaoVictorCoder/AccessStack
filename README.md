@@ -1,6 +1,6 @@
-# OpsFlow Core
+# AcessStack
 
-OpsFlow Core is an open source platform for credentialing, administrative operations, and access control workflows.
+AcessStack is an open source platform for credentialing, administrative operations, and access control workflows.
 
 It can be used as a base for:
 - events and visitor management
@@ -30,7 +30,7 @@ It can be used as a base for:
 ## Repository Structure
 
 ```text
-opsflow-core/
+acessstack/
 |-- frontend/
 |   `-- src/
 |       |-- api/

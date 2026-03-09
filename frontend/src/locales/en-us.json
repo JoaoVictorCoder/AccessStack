@@ -1,6 +1,6 @@
 {
   "app": {
-    "brandTitle": "OpsFlow Core",
+    "brandTitle": "AcessStack",
     "brandSubtitle": "Open source platform for credentials, operations and access control",
     "tabs": {
       "public": "Public",
@@ -65,7 +65,7 @@
     }
   },
   "public": {
-    "heroChipPrimary": "OpsFlow Core",
+    "heroChipPrimary": "AcessStack",
     "heroChipSecondary": "Open Source Edition",
     "heroTitle": "Public Registration Portal",
     "heroText": "Use this portal to register participants, issue credentials and support operational access workflows.",

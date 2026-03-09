@@ -11,7 +11,7 @@ export function getJwtSecret() {
     throw new Error("JWT_SECRET deve ser definido com no minimo 32 caracteres em producao");
   }
 
-  return "hackathon-dev-secret-change-me";
+  return "acessstack-dev-secret-change-me";
 }
 
 export function getJwtExpiresIn() {

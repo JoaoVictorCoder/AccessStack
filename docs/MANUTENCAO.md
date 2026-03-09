@@ -1,6 +1,6 @@
 # Maintenance Guide
 
-This guide explains where to change OpsFlow Core safely without breaking frontend/backend contracts.
+This guide explains where to change AcessStack safely without breaking frontend/backend contracts.
 
 ## Fast Architecture Map
 

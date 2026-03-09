@@ -20,13 +20,13 @@ async function main() {
   const eventRecord = await prisma.evento.upsert({
     where: { id: "11111111-1111-1111-1111-111111111111" },
     update: {
-      nomeEvento: "OpsFlow Core - Demo Event",
+      nomeEvento: "AcessStack - Demo Event",
       isGratuito: true,
       ativo: true
     },
     create: {
       id: "11111111-1111-1111-1111-111111111111",
-      nomeEvento: "OpsFlow Core - Demo Event",
+      nomeEvento: "AcessStack - Demo Event",
       isGratuito: true,
       ativo: true
     }
@@ -160,23 +160,23 @@ async function main() {
     }
   }
 
-  const adminEmail = (process.env.ADMIN_EMAIL || "admin@opsflow.local").toLowerCase();
+  const adminEmail = (process.env.ADMIN_EMAIL || "admin@acessstack.local").toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD || "Admin@123";
-  const masterEmail = (process.env.MASTER_EMAIL || "owner@opsflow.local").toLowerCase();
+  const masterEmail = (process.env.MASTER_EMAIL || "owner@acessstack.local").toLowerCase();
   const masterPassword = process.env.MASTER_PASSWORD || "Master@123";
-  const gateEmail = (process.env.GATE_EMAIL || "operator@opsflow.local").toLowerCase();
+  const gateEmail = (process.env.GATE_EMAIL || "operator@acessstack.local").toLowerCase();
   const gatePassword = process.env.GATE_PASSWORD || "Gate@123";
   const scannerEmail = (
     process.env.SCANNER_EMAIL ||
     process.env.LEITOR_EMAIL ||
-    "scanner@opsflow.local"
+    "scanner@acessstack.local"
   ).toLowerCase();
   const scannerPassword =
     process.env.SCANNER_PASSWORD || process.env.LEITOR_PASSWORD || "Scanner@123";
   const governanceEmail = (
     process.env.GOVERNANCE_EMAIL ||
     process.env.COMISSAO_EMAIL ||
-    "governance@opsflow.local"
+    "governance@acessstack.local"
   ).toLowerCase();
   const governancePassword =
     process.env.GOVERNANCE_PASSWORD || process.env.COMISSAO_PASSWORD || "Governance@123";

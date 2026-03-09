@@ -1,4 +1,4 @@
-# Contributing to OpsFlow Core
+# Contributing to AcessStack
 
 Thanks for your interest in contributing.
 
