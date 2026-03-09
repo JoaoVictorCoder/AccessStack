@@ -2,78 +2,78 @@ import {
   findAccessAttemptById,
   listAccessAttempts
 } from "../repositories/accessAttemptRepository.js";
-import { AdminRole } from "../domain/enums.js";
-
-function resolveScope(auth) {
-  if (auth?.role === AdminRole.COMISSAO_ORGANIZADORA) {
-    return { comissaoResponsavelId: auth.id };
-  }
-  return undefined;
-}
+import {
+  buildPaginatedPayload,
+  parseOptionalStringQuery,
+  parsePagination
+} from "../http/queryParsers.js";
+import { resolveComissaoScopeFromAuth } from "../http/actorContext.js";
 
 export async function listAccessLogsAdminHandler(req, res) {
-  const page = Math.max(Number(req.query.page || 1), 1);
-  const pageSize = Math.min(Math.max(Number(req.query.pageSize || 20), 1), 100);
+  const { page, pageSize } = parsePagination(req.query, {
+    defaultPage: 1,
+    defaultPageSize: 20,
+    maxPageSize: 100
+  });
 
   const { items, total } = await listAccessAttempts({
     page,
     pageSize,
-    resultado: typeof req.query.resultado === "string" ? req.query.resultado : undefined,
-    categoria: typeof req.query.categoria === "string" ? req.query.categoria : undefined,
-    operatorId: typeof req.query.operatorId === "string" ? req.query.operatorId : undefined,
-    comissaoResponsavelId:
-      typeof req.query.comissaoResponsavelId === "string" ? req.query.comissaoResponsavelId : undefined,
-    standId: typeof req.query.standId === "string" ? req.query.standId : undefined,
-    empresaVinculadaId:
-      typeof req.query.empresaVinculadaId === "string" ? req.query.empresaVinculadaId : undefined,
-    empresaNome: typeof req.query.empresaNome === "string" ? req.query.empresaNome : undefined,
-    credenciadoId: typeof req.query.credenciadoId === "string" ? req.query.credenciadoId : undefined,
-    dateFrom: typeof req.query.dateFrom === "string" ? req.query.dateFrom : undefined,
-    dateTo: typeof req.query.dateTo === "string" ? req.query.dateTo : undefined,
-    scope: resolveScope(req.auth)
+    resultado: parseOptionalStringQuery(req.query, "resultado"),
+    categoria: parseOptionalStringQuery(req.query, "categoria"),
+    operatorId: parseOptionalStringQuery(req.query, "operatorId"),
+    comissaoResponsavelId: parseOptionalStringQuery(req.query, "comissaoResponsavelId"),
+    standId: parseOptionalStringQuery(req.query, "standId"),
+    empresaVinculadaId: parseOptionalStringQuery(req.query, "empresaVinculadaId"),
+    empresaNome: parseOptionalStringQuery(req.query, "empresaNome"),
+    credenciadoId: parseOptionalStringQuery(req.query, "credenciadoId"),
+    dateFrom: parseOptionalStringQuery(req.query, "dateFrom"),
+    dateTo: parseOptionalStringQuery(req.query, "dateTo"),
+    scope: resolveComissaoScopeFromAuth(req.auth)
   });
 
-  return res.json({
-    items: items.map((item) => ({
-      id: item.id,
-      credencialId: item.credencialId,
-      credenciadoId: item.credencial?.credenciado?.id || null,
-      nomeCredenciado: item.credencial?.credenciado?.nomeCompleto || null,
-      categoria: item.credencial?.credenciado?.categoria || null,
-      operatorId: item.operatorId,
-      operatorNome: item.operatorNome,
-      operatorEmail: item.operatorEmail,
-      operatorRole: item.operatorRole,
-      standId: item.standId,
-      standName: item.standName,
-      empresaNome: item.empresaNome,
-      empresaVinculadaId: item.empresaVinculadaId,
-      empresaVinculadaNome: item.empresaVinculadaNome,
-      comissaoResponsavelId: item.comissaoResponsavelId,
-      comissaoResponsavelNome: item.comissaoResponsavelNome,
-      deviceId: item.deviceId,
-      deviceInfo: item.deviceInfo,
-      accessPoint: item.accessPoint,
-      gate: item.gateDevice
-        ? {
-            id: item.gateDevice.id,
-            codigo: item.gateDevice.codigo,
-            nome: item.gateDevice.nome
-          }
-        : null,
-      resultado: item.resultado,
-      motivo: item.motivo,
-      createdAt: item.createdAt
-    })),
-    page,
-    pageSize,
-    total,
-    totalPages: Math.max(Math.ceil(total / pageSize), 1)
-  });
+  return res.json(
+    buildPaginatedPayload({
+      items: items.map((item) => ({
+        id: item.id,
+        credencialId: item.credencialId,
+        credenciadoId: item.credencial?.credenciado?.id || null,
+        nomeCredenciado: item.credencial?.credenciado?.nomeCompleto || null,
+        categoria: item.credencial?.credenciado?.categoria || null,
+        operatorId: item.operatorId,
+        operatorNome: item.operatorNome,
+        operatorEmail: item.operatorEmail,
+        operatorRole: item.operatorRole,
+        standId: item.standId,
+        standName: item.standName,
+        empresaNome: item.empresaNome,
+        empresaVinculadaId: item.empresaVinculadaId,
+        empresaVinculadaNome: item.empresaVinculadaNome,
+        comissaoResponsavelId: item.comissaoResponsavelId,
+        comissaoResponsavelNome: item.comissaoResponsavelNome,
+        deviceId: item.deviceId,
+        deviceInfo: item.deviceInfo,
+        accessPoint: item.accessPoint,
+        gate: item.gateDevice
+          ? {
+              id: item.gateDevice.id,
+              codigo: item.gateDevice.codigo,
+              nome: item.gateDevice.nome
+            }
+          : null,
+        resultado: item.resultado,
+        motivo: item.motivo,
+        createdAt: item.createdAt
+      })),
+      page,
+      pageSize,
+      total
+    })
+  );
 }
 
 export async function getAccessLogByIdAdminHandler(req, res) {
-  const item = await findAccessAttemptById(req.params.id, resolveScope(req.auth));
+  const item = await findAccessAttemptById(req.params.id, resolveComissaoScopeFromAuth(req.auth));
   if (!item) {
     return res.status(404).json({ error: "log de acesso nao encontrado" });
   }

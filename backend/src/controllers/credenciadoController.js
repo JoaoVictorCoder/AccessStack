@@ -20,6 +20,13 @@ import {
 import { validateCredenciadoPayload } from "../validators/credenciadoValidator.js";
 import { Categoria, StatusCredenciamento } from "../domain/enums.js";
 import { CreateCredenciamentoUseCase } from "../application/use-cases/createCredenciamentoUseCase.js";
+import {
+  buildPaginatedPayload,
+  parseBoundedLimit,
+  parseOptionalStringQuery,
+  parsePagination
+} from "../http/queryParsers.js";
+import { buildActorContextFromAuth } from "../http/actorContext.js";
 
 const createCredenciamentoUseCase = new CreateCredenciamentoUseCase({
   createCredenciamento,
@@ -73,15 +80,10 @@ export async function createComissaoAdminHandler(req, res) {
   }
 
   try {
-    const created = await createCredenciamentoUseCase.execute(validation.data, {
-      actorType:
-        req.auth?.role === "APP_GATE" ||
-        req.auth?.role === "LEITOR_CATRACA" ||
-        req.auth?.role === "OPERADOR_QR"
-          ? "APP_GATE"
-          : "ADMIN_USER",
-      actorId: req.auth?.id
-    });
+    const created = await createCredenciamentoUseCase.execute(
+      validation.data,
+      buildActorContextFromAuth(req.auth)
+    );
     return res.status(201).json(mapCredenciadoIdentity(created));
   } catch (error) {
     return handleCreateError(error, res);
@@ -126,16 +128,13 @@ export async function getCredenciadoPublicStatusHandler(req, res) {
 }
 
 export async function listCredenciadosAdminHandler(req, res) {
-  const page = Math.max(Number(req.query.page || 1), 1);
-  const pageSize = Math.min(Math.max(Number(req.query.pageSize || 10), 1), 100);
-  const categoria =
-    typeof req.query.categoria === "string" && req.query.categoria
-      ? req.query.categoria
-      : undefined;
-  const search =
-    typeof req.query.search === "string" && req.query.search.trim()
-      ? req.query.search.trim()
-      : undefined;
+  const { page, pageSize } = parsePagination(req.query, {
+    defaultPage: 1,
+    defaultPageSize: 10,
+    maxPageSize: 100
+  });
+  const categoria = parseOptionalStringQuery(req.query, "categoria");
+  const search = parseOptionalStringQuery(req.query, "search");
 
   if (categoria && !Object.values(Categoria).includes(categoria)) {
     return res.status(400).json({ error: "categoria de filtro invalida" });
@@ -148,13 +147,14 @@ export async function listCredenciadosAdminHandler(req, res) {
     search
   });
 
-  return res.json({
-    items: items.map(mapAdminCredenciadoListItem),
-    page,
-    pageSize,
-    total,
-    totalPages: Math.max(Math.ceil(total / pageSize), 1)
-  });
+  return res.json(
+    buildPaginatedPayload({
+      items: items.map(mapAdminCredenciadoListItem),
+      page,
+      pageSize,
+      total
+    })
+  );
 }
 
 export async function getCredenciadoAdminByIdHandler(req, res) {
@@ -170,8 +170,10 @@ export async function listCredenciadoEventosAdminHandler(req, res) {
   if (!credenciado) {
     return res.status(404).json({ error: "credenciado nao encontrado" });
   }
-  const limit = Number(req.query.limit || 50);
-  const boundedLimit = Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 200) : 50;
+  const boundedLimit = parseBoundedLimit(req.query.limit, {
+    defaultLimit: 50,
+    maxLimit: 200
+  });
   const events = await listEventosByCredenciadoId(req.params.id, boundedLimit);
   return res.json(events.map(mapEventoSistema));
 }

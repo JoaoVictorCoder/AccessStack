@@ -1,30 +1,13 @@
 import { prisma } from "../prisma.js";
-
-// Include unico usado pelas consultas de identidade.
-// Alterar esta estrutura muda a carga retornada para varias telas admin;
-// faça isso com cuidado para nao aumentar payload sem necessidade.
-const includeIdentity = {
-  evento: true,
-  credencial: {
-    include: {
-      _count: {
-        select: { accessAttempts: true }
-      },
-      accessAttempts: {
-        orderBy: { createdAt: "desc" },
-        take: 1
-      }
-    }
-  }
-};
+import { credenciadoIdentityInclude } from "./queryFragments.js";
 
 export async function createCredenciado(data, tx = prisma) {
-  return tx.credenciado.create({ data, include: includeIdentity });
+  return tx.credenciado.create({ data, include: credenciadoIdentityInclude });
 }
 
 export async function listCredenciados() {
   return prisma.credenciado.findMany({
-    include: includeIdentity,
+    include: credenciadoIdentityInclude,
     orderBy: { createdAt: "desc" }
   });
 }
@@ -53,7 +36,7 @@ export async function listCredenciadosPaginated({
   const [items, total] = await Promise.all([
     prisma.credenciado.findMany({
       where,
-      include: includeIdentity,
+      include: credenciadoIdentityInclude,
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize
@@ -64,10 +47,10 @@ export async function listCredenciadosPaginated({
   return { items, total };
 }
 
-export async function findCredenciadoById(id) {
-  return prisma.credenciado.findUnique({
+export async function findCredenciadoById(id, tx = prisma) {
+  return tx.credenciado.findUnique({
     where: { id },
-    include: includeIdentity
+    include: credenciadoIdentityInclude
   });
 }
 
@@ -75,6 +58,6 @@ export async function updateCredenciadoById(id, data, tx = prisma) {
   return tx.credenciado.update({
     where: { id },
     data,
-    include: includeIdentity
+    include: credenciadoIdentityInclude
   });
 }

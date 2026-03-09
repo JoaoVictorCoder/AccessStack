@@ -1,4 +1,5 @@
 import { prisma } from "../prisma.js";
+import { eventoSistemaCredenciadoSelect } from "./queryFragments.js";
 
 export async function createEventoSistema(data, tx = prisma) {
   return tx.eventoSistema.create({ data });
@@ -7,16 +8,7 @@ export async function createEventoSistema(data, tx = prisma) {
 export async function listEventosSistema() {
   return prisma.eventoSistema.findMany({
     orderBy: { createdAt: "desc" },
-    include: {
-      credenciado: {
-        select: {
-          id: true,
-          nomeCompleto: true,
-          categoria: true,
-          statusCredenciamento: true
-        }
-      }
-    }
+    include: eventoSistemaCredenciadoSelect
   });
 }
 
@@ -27,16 +19,7 @@ export async function listEventosSistemaWithFilters({ limit, tipoEvento }) {
     },
     take: limit,
     orderBy: { createdAt: "desc" },
-    include: {
-      credenciado: {
-        select: {
-          id: true,
-          nomeCompleto: true,
-          categoria: true,
-          statusCredenciamento: true
-        }
-      }
-    }
+    include: eventoSistemaCredenciadoSelect
   });
 }
 

@@ -10,6 +10,7 @@ O objetivo e reduzir o risco de quebrar contratos entre frontend, backend e banc
 - `frontend/src/components/*`: blocos visuais e formularios especializados.
 - `backend/src/routes/*`: exposicao de endpoints.
 - `backend/src/controllers/*`: adaptacao HTTP.
+- `backend/src/http/*`: helpers de camada HTTP (parsing de query/paginacao e contexto de ator).
 - `backend/src/services/*`: regras de negocio mais amplas e fluxos administrativos.
 - `backend/src/application/*`: casos de uso e portas da estrutura hexagonal.
 - `backend/src/adapters/out/*`: ligacao da aplicacao com persistencia, PDF, QR e catraca.
@@ -84,6 +85,18 @@ Quando houver integracao real, a troca ideal acontece no provider/adapter sem re
 O adapter `backend/src/adapters/out/prisma/prismaAdapter.js` reexporta as operacoes necessarias para a aplicacao.
 Prefira preservar esse contrato e modificar os repositories quando houver mudanca de banco, include ou estrategia de consulta.
 
+Os includes/selects compartilhados de consultas Prisma ficam em `backend/src/repositories/queryFragments.js`.
+Quando um payload de consulta for alterado, ajuste primeiro esse arquivo e depois valide os mappers e telas que dependem dele.
+
+### Parsing HTTP e escopo de ator
+
+Para manter consistencia entre controllers:
+
+- `backend/src/http/queryParsers.js`: paginação, limites e strings de query.
+- `backend/src/http/actorContext.js`: resolve `actorType` e escopo de comissao organizadora.
+
+Ao criar endpoint novo, reutilize esses helpers antes de adicionar parsing manual em controller.
+
 ## Receitas de alteracao comum
 
 ### Adicionar um campo no cadastro
@@ -118,10 +131,11 @@ Prefira preservar esse contrato e modificar os repositories quando houver mudanc
 ## Ordem segura para mudancas estruturais
 
 1. Atualizar schema e contratos do backend.
-2. Atualizar repositories/services/controllers.
-3. Atualizar `frontend/src/api/credenciamentoApi.js`.
-4. Atualizar telas e componentes.
-5. Validar manualmente os tres fluxos: publico, admin e operador.
+2. Atualizar repositories (inclusive `queryFragments.js`) e services.
+3. Atualizar controllers, reaproveitando helpers em `backend/src/http/*`.
+4. Atualizar `frontend/src/api/credenciamentoApi.js`.
+5. Atualizar telas e componentes.
+6. Validar manualmente os tres fluxos: publico, admin e operador.
 
 ## Checklist rapido antes de finalizar uma alteracao
 

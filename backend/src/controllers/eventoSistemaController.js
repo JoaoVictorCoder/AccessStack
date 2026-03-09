@@ -4,11 +4,14 @@ import {
 } from "../repositories/eventoSistemaRepository.js";
 import { mapEventoSistema } from "../mappers/identityMapper.js";
 import { TipoEventoSistema } from "../domain/enums.js";
+import { parseBoundedLimit, parseOptionalStringQuery } from "../http/queryParsers.js";
 
 export async function listEventosSistemaAdminHandler(req, res) {
-  const limit = Number(req.query.limit || 100);
-  const boundedLimit = Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 500) : 100;
-  const tipoEvento = typeof req.query.tipoEvento === "string" ? req.query.tipoEvento : undefined;
+  const boundedLimit = parseBoundedLimit(req.query.limit, {
+    defaultLimit: 100,
+    maxLimit: 500
+  });
+  const tipoEvento = parseOptionalStringQuery(req.query, "tipoEvento");
 
   if (tipoEvento && !Object.values(TipoEventoSistema).includes(tipoEvento)) {
     return res.status(400).json({ error: "tipoEvento invalido" });

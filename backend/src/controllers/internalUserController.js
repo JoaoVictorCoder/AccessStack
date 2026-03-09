@@ -6,6 +6,25 @@ import {
   updateInternalUserService
 } from "../services/internalUserService.js";
 
+function sendInternalUserError(res, result, { badRequestMessage } = {}) {
+  if (!result) {
+    return false;
+  }
+  if (result.error === "perfil sem permissao para gerenciar usuarios internos") {
+    res.status(403).json({ error: result.error });
+    return true;
+  }
+  if (result.notFound) {
+    res.status(404).json({ error: "usuario interno nao encontrado" });
+    return true;
+  }
+  if (result.error) {
+    res.status(400).json({ error: badRequestMessage || result.error });
+    return true;
+  }
+  return false;
+}
+
 export async function listInternalUsersHandler(req, res) {
   const items = await listInternalUsersService(req.auth);
   if (items?.error) {
@@ -16,22 +35,16 @@ export async function listInternalUsersHandler(req, res) {
 
 export async function createInternalUserHandler(req, res) {
   const result = await createInternalUserService(req.body || {}, req.auth);
-  if (result.error) {
-    return res.status(400).json({ error: result.error });
+  if (sendInternalUserError(res, result)) {
+    return;
   }
   return res.status(201).json(result.user);
 }
 
 export async function updateInternalUserHandler(req, res) {
   const result = await updateInternalUserService(req.params.id, req.body || {}, req.auth);
-  if (result.error === "perfil sem permissao para gerenciar usuarios internos") {
-    return res.status(403).json({ error: result.error });
-  }
-  if (result.notFound) {
-    return res.status(404).json({ error: "usuario interno nao encontrado" });
-  }
-  if (result.error) {
-    return res.status(400).json({ error: result.error });
+  if (sendInternalUserError(res, result)) {
+    return;
   }
   return res.json(result.user);
 }
@@ -43,11 +56,8 @@ export async function updateInternalUserActiveHandler(req, res) {
   }
 
   const result = await updateInternalUserActiveService(req.params.id, ativo, req.auth);
-  if (result.error) {
-    return res.status(403).json({ error: result.error });
-  }
-  if (result.notFound) {
-    return res.status(404).json({ error: "usuario interno nao encontrado" });
+  if (sendInternalUserError(res, result, { badRequestMessage: result?.error })) {
+    return;
   }
 
   return res.json(result.user);
@@ -59,11 +69,8 @@ export async function updateInternalUserPermissionsHandler(req, res) {
     req.body?.permissoesCustomizadas || {},
     req.auth
   );
-  if (result.error) {
-    return res.status(403).json({ error: result.error });
-  }
-  if (result.notFound) {
-    return res.status(404).json({ error: "usuario interno nao encontrado" });
+  if (sendInternalUserError(res, result, { badRequestMessage: result?.error })) {
+    return;
   }
 
   return res.json(result.user);

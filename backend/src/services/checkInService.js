@@ -18,6 +18,46 @@ import { MockGateProvider } from "../providers/gate/mockGateProvider.js";
 
 const gateProvider = new MockGateProvider();
 
+function buildActorAccessContext(actor) {
+  return {
+    operatorId: actor?.actorId || null,
+    operatorNome: actor?.actorName || null,
+    operatorEmail: actor?.actorEmail || null,
+    operatorRole: actor?.actorRole || null,
+    standId: actor?.standId || null,
+    standName: actor?.standName || null,
+    empresaNome: actor?.empresaNome || actor?.empresaVinculadaNome || null,
+    empresaVinculadaId: actor?.empresaVinculadaId || null,
+    empresaVinculadaNome: actor?.empresaVinculadaNome || actor?.empresaNome || null,
+    comissaoResponsavelId: actor?.comissaoResponsavelId || null,
+    comissaoResponsavelNome: actor?.comissaoResponsavelNome || null
+  };
+}
+
+function buildAccessAttemptPayload({
+  credencialId,
+  gateDeviceId,
+  accessPoint,
+  resultado,
+  motivo,
+  deviceId,
+  deviceInfo,
+  metadata,
+  actor
+}) {
+  return {
+    credencialId: credencialId || null,
+    gateDeviceId,
+    ...buildActorAccessContext(actor),
+    deviceId: deviceId || null,
+    deviceInfo: deviceInfo || null,
+    accessPoint,
+    resultado,
+    motivo,
+    metadata: metadata || null
+  };
+}
+
 export async function validateAndCheckIn(
   { codigoUnico, gateCode, accessPoint, deviceId, deviceInfo, observacaoOperacional },
   actor
@@ -35,27 +75,17 @@ export async function validateAndCheckIn(
     const credencial = await findCredencialByCodigoUnico(codigoUnico, tx);
     if (!credencial) {
       await createAccessAttempt(
-        {
+        buildAccessAttemptPayload({
           credencialId: null,
           gateDeviceId: gateDevice.id,
           accessPoint: accessPoint || gateCode,
           resultado: AccessResult.DENY,
           motivo: AccessReason.CREDENCIAL_INVALIDA,
-          operatorId: actor?.actorId || null,
-          operatorNome: actor?.actorName || null,
-          operatorEmail: actor?.actorEmail || null,
-          operatorRole: actor?.actorRole || null,
-          standId: actor?.standId || null,
-          standName: actor?.standName || null,
-          empresaNome: actor?.empresaNome || actor?.empresaVinculadaNome || null,
-          empresaVinculadaId: actor?.empresaVinculadaId || null,
-          empresaVinculadaNome: actor?.empresaVinculadaNome || actor?.empresaNome || null,
-          comissaoResponsavelId: actor?.comissaoResponsavelId || null,
-          comissaoResponsavelNome: actor?.comissaoResponsavelNome || null,
           deviceId: deviceId || null,
           deviceInfo: deviceInfo || null,
-          metadata: { codigoUnico, observacaoOperacional: observacaoOperacional || null }
-        },
+          metadata: { codigoUnico, observacaoOperacional: observacaoOperacional || null },
+          actor
+        }),
         tx
       );
       await createAuditLog(
@@ -108,20 +138,9 @@ export async function validateAndCheckIn(
     const result = allowed ? AccessResult.ALLOW : AccessResult.DENY;
 
     await createAccessAttempt(
-      {
+      buildAccessAttemptPayload({
         credencialId: credencial.id,
         gateDeviceId: gateDevice.id,
-        operatorId: actor?.actorId || null,
-        operatorNome: actor?.actorName || null,
-        operatorEmail: actor?.actorEmail || null,
-        operatorRole: actor?.actorRole || null,
-        standId: actor?.standId || null,
-        standName: actor?.standName || null,
-        empresaNome: actor?.empresaNome || actor?.empresaVinculadaNome || null,
-        empresaVinculadaId: actor?.empresaVinculadaId || null,
-        empresaVinculadaNome: actor?.empresaVinculadaNome || actor?.empresaNome || null,
-        comissaoResponsavelId: actor?.comissaoResponsavelId || null,
-        comissaoResponsavelNome: actor?.comissaoResponsavelNome || null,
         deviceId: deviceId || null,
         deviceInfo: deviceInfo || null,
         accessPoint: accessPoint || gateCode,
@@ -131,8 +150,9 @@ export async function validateAndCheckIn(
           credenciadoId: credencial.credenciado.id,
           categoria: credencial.credenciado.categoria,
           observacaoOperacional: observacaoOperacional || null
-        }
-      },
+        },
+        actor
+      }),
       tx
     );
 

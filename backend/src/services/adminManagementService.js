@@ -4,40 +4,23 @@ import {
   StatusCredencial,
   TipoEventoSistema
 } from "../domain/enums.js";
-import { generateCredentialCode } from "../utils/codeGenerator.js";
 import {
   findCredenciadoById,
   updateCredenciadoById
 } from "../repositories/credenciadoRepository.js";
 import {
-  existsByCodigoUnico,
   findCredencialById,
   updateCredencialById,
   updateCredencialStatus
 } from "../repositories/credencialRepository.js";
 import { createEventoSistema } from "../repositories/eventoSistemaRepository.js";
 import { createAuditLog } from "../repositories/auditLogRepository.js";
-
-async function generateUniqueCredentialCode(tx) {
-  for (let i = 0; i < 5; i += 1) {
-    const code = generateCredentialCode();
-    const exists = await existsByCodigoUnico(code, tx);
-    if (!exists) {
-      return code;
-    }
-  }
-  throw new Error("nao foi possivel reemitir codigo unico");
-}
-
-function getActorType(auth) {
-  return auth?.role === "APP_GATE" || auth?.role === "LEITOR_CATRACA" || auth?.role === "OPERADOR_QR"
-    ? "APP_GATE"
-    : "ADMIN_USER";
-}
+import { resolveAuditActorType } from "../http/actorContext.js";
+import { generateUniqueCredentialCode } from "./credentialCodeService.js";
 
 export async function updateCredenciadoAdmin(id, data, auth) {
   return prisma.$transaction(async (tx) => {
-    const before = await findCredenciadoById(id);
+    const before = await findCredenciadoById(id, tx);
     const updated = await updateCredenciadoById(id, data, tx);
 
     await createEventoSistema(
@@ -52,7 +35,7 @@ export async function updateCredenciadoAdmin(id, data, auth) {
 
     await createAuditLog(
       {
-        actorType: getActorType(auth),
+        actorType: resolveAuditActorType(auth?.role),
         actorId: auth?.id || null,
         acao: "CREDENCIADO_UPDATE",
         recurso: "CREDENCIADO",
@@ -71,7 +54,7 @@ export async function updateCredenciadoStatusAdmin(id, status, reason, auth) {
     const updated = await updateCredenciadoById(id, { statusCredenciamento: status }, tx);
     await createAuditLog(
       {
-        actorType: getActorType(auth),
+        actorType: resolveAuditActorType(auth?.role),
         actorId: auth?.id || null,
         acao: "CREDENCIADO_STATUS_UPDATE",
         recurso: "CREDENCIADO",
@@ -93,7 +76,7 @@ export async function updateCredencialStatusAdmin(id, statusCredencial, reason, 
     const updated = await updateCredencialStatus(id, statusCredencial, tx);
     await createAuditLog(
       {
-        actorType: getActorType(auth),
+        actorType: resolveAuditActorType(auth?.role),
         actorId: auth?.id || null,
         acao: "CREDENCIAL_STATUS_UPDATE",
         recurso: "CREDENCIAL",
@@ -160,7 +143,7 @@ export async function updateCredencialAdmin(id, data, auth) {
 
     await createAuditLog(
       {
-        actorType: getActorType(auth),
+        actorType: resolveAuditActorType(auth?.role),
         actorId: auth?.id || null,
         acao: "CREDENCIAL_UPDATE",
         recurso: "CREDENCIAL",
@@ -183,7 +166,9 @@ export async function reissueCredencialAdmin(id, reason, auth) {
       return null;
     }
 
-    const codigoUnico = await generateUniqueCredentialCode(tx);
+    const codigoUnico = await generateUniqueCredentialCode(tx, {
+      errorMessage: "nao foi possivel reemitir codigo unico"
+    });
     const qrCodePayload = JSON.stringify({
       version: 2,
       credenciadoId: credencial.credenciadoId,
@@ -197,14 +182,14 @@ export async function reissueCredencialAdmin(id, reason, auth) {
         codigoUnico,
         qrCodePayload,
         emitidaEm: new Date(),
-        statusCredencial: "ATIVA"
+        statusCredencial: StatusCredencial.ATIVA
       },
       tx
     );
 
     await createAuditLog(
       {
-        actorType: getActorType(auth),
+        actorType: resolveAuditActorType(auth?.role),
         actorId: auth?.id || null,
         acao: "CREDENCIAL_REEMITIR",
         recurso: "CREDENCIAL",

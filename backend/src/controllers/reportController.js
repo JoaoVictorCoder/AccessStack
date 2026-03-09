@@ -1,5 +1,6 @@
 import { listStandVisitorsReport } from "../repositories/accessAttemptRepository.js";
-import { AdminRole } from "../domain/enums.js";
+import { parseOptionalStringQuery } from "../http/queryParsers.js";
+import { resolveComissaoScopeFromAuth } from "../http/actorContext.js";
 
 function maskEmail(email) {
   const [name, domain] = String(email || "").split("@");
@@ -14,21 +15,16 @@ function maskPhone(phone) {
 }
 
 export async function standVisitorsReportHandler(req, res) {
-  const scope =
-    req.auth?.role === AdminRole.COMISSAO_ORGANIZADORA
-      ? { comissaoResponsavelId: req.auth.id }
-      : undefined;
+  const scope = resolveComissaoScopeFromAuth(req.auth);
 
   const items = await listStandVisitorsReport({
-    standId: typeof req.query.standId === "string" ? req.query.standId : undefined,
-    operatorId: typeof req.query.operatorId === "string" ? req.query.operatorId : undefined,
-    comissaoResponsavelId:
-      typeof req.query.comissaoResponsavelId === "string" ? req.query.comissaoResponsavelId : undefined,
-    empresaVinculadaId:
-      typeof req.query.empresaVinculadaId === "string" ? req.query.empresaVinculadaId : undefined,
-    categoria: typeof req.query.categoria === "string" ? req.query.categoria : undefined,
-    dateFrom: typeof req.query.dateFrom === "string" ? req.query.dateFrom : undefined,
-    dateTo: typeof req.query.dateTo === "string" ? req.query.dateTo : undefined,
+    standId: parseOptionalStringQuery(req.query, "standId"),
+    operatorId: parseOptionalStringQuery(req.query, "operatorId"),
+    comissaoResponsavelId: parseOptionalStringQuery(req.query, "comissaoResponsavelId"),
+    empresaVinculadaId: parseOptionalStringQuery(req.query, "empresaVinculadaId"),
+    categoria: parseOptionalStringQuery(req.query, "categoria"),
+    dateFrom: parseOptionalStringQuery(req.query, "dateFrom"),
+    dateTo: parseOptionalStringQuery(req.query, "dateTo"),
     scope
   });
 

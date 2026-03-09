@@ -95,9 +95,12 @@ Fatec-Hackathon/
 O backend segue uma organizacao inspirada em **arquitetura hexagonal**, com separacao entre:
 
 - **ports/use-cases:** contratos e regras de aplicacao
+- **http:** parsing de request e contexto de ator para controllers
 - **adapters:** integracoes com banco, PDF, QR e catraca
 - **repositories:** acesso a dados com Prisma
 - **controllers/routes:** camada HTTP
+
+No acesso a dados, os fragmentos compartilhados de `include/select` Prisma foram centralizados em `backend/src/repositories/queryFragments.js`, reduzindo duplicacao entre repositories e facilitando manutencao dos payloads de consulta.
 
 No frontend, o arquivo `frontend/src/App.jsx` centraliza a navegacao e a composicao das tres jornadas do sistema.
 O contrato HTTP do frontend fica concentrado em `frontend/src/api/credenciamentoApi.js`.

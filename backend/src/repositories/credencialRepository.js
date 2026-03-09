@@ -1,4 +1,5 @@
 import { prisma } from "../prisma.js";
+import { credencialWithCredenciadoInclude } from "./queryFragments.js";
 
 export async function createCredencial(data, tx = prisma) {
   return tx.credencial.create({ data });
@@ -7,14 +8,14 @@ export async function createCredencial(data, tx = prisma) {
 export async function findCredencialById(id, tx = prisma) {
   return tx.credencial.findUnique({
     where: { id },
-    include: { credenciado: { include: { evento: true } } }
+    include: credencialWithCredenciadoInclude
   });
 }
 
 export async function findCredencialByCodigoUnico(codigoUnico, tx = prisma) {
   return tx.credencial.findUnique({
     where: { codigoUnico },
-    include: { credenciado: { include: { evento: true } } }
+    include: credencialWithCredenciadoInclude
   });
 }
 
@@ -29,7 +30,7 @@ export async function updateCredencialById(id, data, tx = prisma) {
   return tx.credencial.update({
     where: { id },
     data,
-    include: { credenciado: { include: { evento: true } } }
+    include: credencialWithCredenciadoInclude
   });
 }
 

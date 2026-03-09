@@ -4,27 +4,13 @@ import {
   StatusCredencial,
   TipoEventoSistema
 } from "../domain/enums.js";
-import { generateCredentialCode } from "../utils/codeGenerator.js";
 import { createCredenciado } from "../repositories/credenciadoRepository.js";
-import {
-  createCredencial,
-  existsByCodigoUnico
-} from "../repositories/credencialRepository.js";
+import { createCredencial } from "../repositories/credencialRepository.js";
 import { createEventoSistema } from "../repositories/eventoSistemaRepository.js";
 import { createAuditLog } from "../repositories/auditLogRepository.js";
 import { findOrCreateDefaultEvento } from "../repositories/eventoRepository.js";
 import { calculateCarbonEstimate } from "./descarbonizacaoService.js";
-
-async function generateUniqueCredentialCode(tx) {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const code = generateCredentialCode();
-    const exists = await existsByCodigoUnico(code, tx);
-    if (!exists) {
-      return code;
-    }
-  }
-  throw new Error("nao foi possivel gerar codigo unico da credencial");
-}
+import { generateUniqueCredentialCode } from "./credentialCodeService.js";
 
 function buildQrPayload({ credenciadoId, credentialCode }) {
   return JSON.stringify({
@@ -57,7 +43,9 @@ export async function createCredenciamento(identityPayload, actor = null) {
       tx
     );
 
-    const credentialCode = await generateUniqueCredentialCode(tx);
+    const credentialCode = await generateUniqueCredentialCode(tx, {
+      errorMessage: "nao foi possivel gerar codigo unico da credencial"
+    });
     const qrCodePayload = buildQrPayload({
       credenciadoId: createdCredenciado.id,
       credentialCode

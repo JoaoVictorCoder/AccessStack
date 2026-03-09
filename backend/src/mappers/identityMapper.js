@@ -104,7 +104,6 @@ export function mapPublicCredenciamentoResult(credenciado) {
     statusCredenciamento: credenciado.statusCredenciamento,
     aceitouLgpd: credenciado.aceitouLgpd,
     aceitouCompartilhamentoComExpositores: credenciado.aceitouCompartilhamentoComExpositores,
-    aceitouCompartilhamentoComExpositores: credenciado.aceitouCompartilhamentoComExpositores,
     evento: credenciado.evento
       ? {
           id: credenciado.evento.id,
