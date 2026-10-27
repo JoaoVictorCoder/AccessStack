@@ -16,6 +16,24 @@ const initialEvents = [
   }
 ];
 
+// O seed roda a cada boot do container (start.sh). Por isso as senhas so sao
+// gravadas na criacao do usuario: o `update` dos upserts nao toca em
+// passwordHash nem em `ativo`, para nao desfazer trocas de senha ou
+// desativacoes feitas pelo painel.
+function resolveSeedPassword(envNames, devFallback) {
+  for (const name of envNames) {
+    if (process.env[name]) {
+      return process.env[name];
+    }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(`${envNames[0]} deve ser definido em producao`);
+  }
+
+  return devFallback;
+}
+
 async function main() {
   const eventRecord = await prisma.evento.upsert({
     where: { id: "11111111-1111-1111-1111-111111111111" },
@@ -146,25 +164,26 @@ async function main() {
   }
 
   const adminEmail = (process.env.ADMIN_EMAIL || "admin@acessstack.local").toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD || "Admin@123";
+  const adminPassword = resolveSeedPassword(["ADMIN_PASSWORD"], "Admin@123");
   const masterEmail = (process.env.MASTER_EMAIL || "owner@acessstack.local").toLowerCase();
-  const masterPassword = process.env.MASTER_PASSWORD || "Master@123";
+  const masterPassword = resolveSeedPassword(["MASTER_PASSWORD"], "Master@123");
   const gateEmail = (process.env.GATE_EMAIL || "operator@acessstack.local").toLowerCase();
-  const gatePassword = process.env.GATE_PASSWORD || "Gate@123";
+  const gatePassword = resolveSeedPassword(["GATE_PASSWORD"], "Gate@123");
   const scannerEmail = (
     process.env.SCANNER_EMAIL ||
     process.env.LEITOR_EMAIL ||
     "scanner@acessstack.local"
   ).toLowerCase();
-  const scannerPassword =
-    process.env.SCANNER_PASSWORD || process.env.LEITOR_PASSWORD || "Scanner@123";
+  const scannerPassword = resolveSeedPassword(["SCANNER_PASSWORD", "LEITOR_PASSWORD"], "Scanner@123");
   const governanceEmail = (
     process.env.GOVERNANCE_EMAIL ||
     process.env.COMISSAO_EMAIL ||
     "governance@acessstack.local"
   ).toLowerCase();
-  const governancePassword =
-    process.env.GOVERNANCE_PASSWORD || process.env.COMISSAO_PASSWORD || "Governance@123";
+  const governancePassword = resolveSeedPassword(
+    ["GOVERNANCE_PASSWORD", "COMISSAO_PASSWORD"],
+    "Governance@123"
+  );
 
   const [adminHash, masterHash, gateHash, scannerHash, governanceHash] = await Promise.all([
     bcrypt.hash(adminPassword, 10),
@@ -178,9 +197,7 @@ async function main() {
     where: { email: masterEmail },
     update: {
       nome: "Master Admin",
-      passwordHash: masterHash,
       role: "MASTER_ADMIN",
-      ativo: true
     },
     create: {
       email: masterEmail,
@@ -195,9 +212,7 @@ async function main() {
     where: { email: adminEmail },
     update: {
       nome: "Administrador",
-      passwordHash: adminHash,
       role: "ADMIN",
-      ativo: true
     },
     create: {
       email: adminEmail,
@@ -212,9 +227,7 @@ async function main() {
     where: { email: governanceEmail },
     update: {
       nome: "Governance Team",
-      passwordHash: governanceHash,
       role: "COMISSAO_ORGANIZADORA",
-      ativo: true
     },
     create: {
       email: governanceEmail,
@@ -234,7 +247,6 @@ async function main() {
     where: { email: gateEmail },
     update: {
       nome: "App Gate",
-      passwordHash: gateHash,
       role: "OPERADOR_QR",
       standId: "STAND-JACTO-01",
       standName: "Unit A",
@@ -250,7 +262,6 @@ async function main() {
         podeConsultarUltimasEntradas: true,
         podeUsarCameraParaLeituraQR: true
       },
-      ativo: true
     },
     create: {
       email: gateEmail,
@@ -279,7 +290,6 @@ async function main() {
     where: { email: scannerEmail },
     update: {
       nome: "QR Scanner",
-      passwordHash: scannerHash,
       role: "OPERADOR_QR",
       comissaoResponsavelId: governanceUser?.id || null,
       permissoesCustomizadas: {
@@ -290,7 +300,6 @@ async function main() {
         podeConsultarUltimasEntradas: true,
         podeUsarCameraParaLeituraQR: true
       },
-      ativo: true
     },
     create: {
       email: scannerEmail,

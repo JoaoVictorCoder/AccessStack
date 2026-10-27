@@ -1,6 +1,8 @@
+-- Em banco vazio o tipo "AdminRole" ainda nao existe aqui (ele e criado em
+-- 20260308100000). Nesse caso o valor e adicionado por 20260308100500.
 DO $$
 BEGIN
-  IF NOT EXISTS (
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'AdminRole') AND NOT EXISTS (
     SELECT 1 FROM pg_type t
     JOIN pg_enum e ON t.oid = e.enumtypid
     WHERE t.typname = 'AdminRole' AND e.enumlabel = 'LEITOR_CATRACA'

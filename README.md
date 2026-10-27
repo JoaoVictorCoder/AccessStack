@@ -48,12 +48,17 @@ acessstack/
 |       |-- config/
 |       |-- controllers/
 |       |-- domain/
+|       |-- errors/
 |       |-- http/
+|       |-- mappers/
 |       |-- middlewares/
 |       |-- providers/
 |       |-- repositories/
 |       |-- routes/
-|       `-- services/
+|       |-- services/
+|       |-- utils/
+|       `-- validators/
+|   `-- test/
 |-- docs/
 |   `-- MANUTENCAO.md
 |-- docker-compose.yml
@@ -84,12 +89,22 @@ cp frontend/.env.example frontend/.env
 cd backend
 npm install
 npm run prisma:generate
-npm run prisma:migrate:dev -- --name init
+npm run prisma:migrate:deploy
 npm run seed
 npm run dev
 ```
 
+Use `prisma:migrate:deploy` to apply the existing migrations. Only run
+`prisma:migrate:dev -- --name <change>` when you are creating a new migration
+after editing `schema.prisma`.
+
 Backend will run at `http://localhost:3001`.
+
+Run the backend unit tests with:
+
+```bash
+npm test
+```
 
 ### 4. Frontend
 
@@ -110,8 +125,13 @@ Frontend design system:
 ## Quick Start (Docker)
 
 ```bash
+cp .env.example .env   # optional for local use, required for any exposed environment
 docker compose up --build
 ```
+
+Without a `.env`, Compose uses development defaults. `JWT_SECRET` and the seed
+user passwords are empty by default: the backend falls back to development
+values, but refuses to start with `NODE_ENV=production` until they are set.
 
 Services:
 - frontend: `http://localhost:5173`
@@ -134,11 +154,22 @@ Services:
 - `AUTH_RATE_LIMIT_*`
 - `PUBLIC_WRITE_RATE_LIMIT_*`
 - `CHECKIN_RATE_LIMIT_*`
-- seed users (`ADMIN_EMAIL`, `MASTER_EMAIL`, etc.)
+- seed users (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, `MASTER_EMAIL`, etc.). Passwords are
+  required in production and are only written when the user is first created,
+  so restarting the container never resets a password changed in the dashboard.
 
 ### Frontend (`frontend/.env`)
 
 - `VITE_API_URL`
+
+## Continuous Integration
+
+`.github/workflows/docker-image.yml` runs on pushes and pull requests to
+`main`, `master` and `develop`:
+
+- **backend**: applies every migration to an empty PostgreSQL, runs the seed and `npm test`
+- **frontend**: `npm ci` and `npm run build`
+- **docker**: builds the backend and frontend images
 
 ## Architecture Notes
 
@@ -207,7 +238,8 @@ Includes participant management, credential lifecycle, events, audit, access log
 ## Known Limitations
 
 - Gate integration is currently mocked.
-- There is no automated test suite yet.
+- Automated tests cover backend validation, rate limiting and auth config; there are
+  no integration or frontend tests yet.
 - Some domain enums and payload keys are still Portuguese for compatibility with current Prisma schema and existing endpoint contracts.
 
 ## Localization (Simple i18n)
@@ -228,9 +260,9 @@ Includes participant management, credential lifecycle, events, audit, access log
 
 ## Roadmap (Suggested)
 
-- Add automated unit/integration tests
+- Add integration tests for the HTTP API and frontend tests
 - Add API docs (OpenAPI/Swagger)
-- Add CI workflow for lint/build/test/security checks
+- Add lint and security checks to CI
 - Add pluggable gate provider implementations
 
 ## Contributing

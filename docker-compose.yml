@@ -23,21 +23,25 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-acessstack}?schema=public
       PORT: ${BACKEND_PORT:-3001}
-      JWT_SECRET: local-development-secret-change-me-32chars
-      JWT_EXPIRES_IN: 8h
-      CORS_ORIGINS: http://localhost:5173
-      ADMIN_EMAIL: admin@acessstack.local
-      ADMIN_PASSWORD: Admin@123
-      MASTER_EMAIL: owner@acessstack.local
-      MASTER_PASSWORD: Master@123
-      GATE_EMAIL: operator@acessstack.local
-      GATE_PASSWORD: Gate@123
-      SCANNER_EMAIL: scanner@acessstack.local
-      SCANNER_PASSWORD: Scanner@123
-      GOVERNANCE_EMAIL: governance@acessstack.local
-      GOVERNANCE_PASSWORD: Governance@123
-      GATE_START_HOUR: 0
-      GATE_END_HOUR: 23
+      # Valores padrao servem so para desenvolvimento local. Para qualquer
+      # ambiente exposto, defina essas variaveis num arquivo .env ao lado deste
+      # compose (veja .env.example na raiz).
+      NODE_ENV: ${NODE_ENV:-development}
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@acessstack.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      MASTER_EMAIL: ${MASTER_EMAIL:-owner@acessstack.local}
+      MASTER_PASSWORD: ${MASTER_PASSWORD:-}
+      GATE_EMAIL: ${GATE_EMAIL:-operator@acessstack.local}
+      GATE_PASSWORD: ${GATE_PASSWORD:-}
+      SCANNER_EMAIL: ${SCANNER_EMAIL:-scanner@acessstack.local}
+      SCANNER_PASSWORD: ${SCANNER_PASSWORD:-}
+      GOVERNANCE_EMAIL: ${GOVERNANCE_EMAIL:-governance@acessstack.local}
+      GOVERNANCE_PASSWORD: ${GOVERNANCE_PASSWORD:-}
+      GATE_START_HOUR: ${GATE_START_HOUR:-0}
+      GATE_END_HOUR: ${GATE_END_HOUR:-23}
     depends_on:
       db:
         condition: service_healthy
