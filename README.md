@@ -138,6 +138,12 @@ Services:
 - backend: `http://localhost:3001`
 - postgres: `localhost:5432`
 
+## Deploy (Netlify)
+
+`netlify.toml` deploys the frontend as a static site and the backend as a
+Netlify Function under `/api`, using an external PostgreSQL such as Neon.
+Step-by-step guide (pt-BR): [docs/DEPLOY_NETLIFY.md](docs/DEPLOY_NETLIFY.md).
+
 ## Environment Variables
 
 ### Backend (`backend/.env`)

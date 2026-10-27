@@ -2,7 +2,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "../prisma.js";
 
-const backupDir = path.resolve(process.cwd(), "backups");
+// Em ambiente serverless (Netlify) o diretorio da aplicacao e somente leitura;
+// use BACKUP_DIR=/tmp/backups. Arquivos em /tmp nao persistem entre execucoes.
+const backupDir = path.resolve(process.env.BACKUP_DIR || path.join(process.cwd(), "backups"));
 
 function nowStamp() {
   return new Date().toISOString().replace(/[:.]/g, "-");

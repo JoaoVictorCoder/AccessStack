@@ -1,0 +1,38 @@
+# Deploy no Netlify: frontend estatico + backend Express como Netlify Function.
+# Variaveis obrigatorias no painel do Netlify (Site configuration > Environment
+# variables): DATABASE_URL, JWT_SECRET e as senhas dos usuarios do seed.
+# Veja docs/DEPLOY_NETLIFY.md.
+
+[build]
+  # Migrations e seed usam DIRECT_DATABASE_URL quando definida (conexao direta
+  # do Neon); a funcao usa DATABASE_URL (conexao com pooler).
+  command = """
+    cd backend && npm ci --include=dev && npx prisma generate && \
+    DATABASE_URL="${DIRECT_DATABASE_URL:-$DATABASE_URL}" npx prisma migrate deploy && \
+    DATABASE_URL="${DIRECT_DATABASE_URL:-$DATABASE_URL}" npm run seed && \
+    cd ../frontend && npm ci --include=dev && npm run build
+  """
+  publish = "frontend/dist"
+  functions = "backend/netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "20"
+  # Frontend e API no mesmo dominio: o cookie de login funciona sem CORS.
+  VITE_API_URL = "/api"
+
+[functions]
+  node_bundler = "esbuild"
+  # pdfkit le arquivos de fonte (.afm) do disco e quebra se for empacotado.
+  external_node_modules = ["@prisma/client", "pdfkit"]
+  included_files = ["backend/node_modules/.prisma/client/**"]
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# Rotas do React Router (BrowserRouter).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
