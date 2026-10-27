@@ -13,7 +13,7 @@ Thanks for your interest in contributing.
    - `cd backend`
    - `npm install`
    - `npm run prisma:generate`
-   - `npm run prisma:migrate:dev -- --name init`
+   - `npm run prisma:migrate:deploy`
    - `npm run seed`
    - `npm run dev`
 5. Frontend:

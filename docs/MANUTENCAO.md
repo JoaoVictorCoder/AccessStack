@@ -116,10 +116,38 @@ If you change includes/selects, verify affected mappers and UI tables.
 3. Update UI visibility rules
 4. Validate scoped access for commission/governance users
 
+### Add/Change Database Schema
+
+1. Edit `backend/prisma/schema.prisma`
+2. Run `npm run prisma:migrate:dev -- --name <change>` to create a new migration
+3. Make sure the new migration applies to an empty database (CI does this on every push)
+4. Never rely on `prisma db push` in deployed environments: it can drop data
+
+Migrations `20260307170000` and `20260307190000` have timestamps earlier than
+`20260308100000`, which is where `AdminRole` and `AccessAttempt` are created.
+They now skip those parts on an empty database, and
+`20260308100500_fix_out_of_order_migrations` reapplies them idempotently.
+
+Databases created before this fix were usually built by the old `start.sh`
+fallback (`db push --accept-data-loss`) and have a failed entry in
+`_prisma_migrations`. To bring one back onto `migrate deploy`, back it up and,
+from `backend/`, mark the old migrations as applied:
+
+```bash
+for m in $(ls prisma/migrations | grep '^2' | grep -v 20260308100500); do
+  npx prisma migrate resolve --applied "$m"
+done
+npx prisma migrate deploy
+```
+
+`P3008` errors ("already recorded as applied") for the first migrations are
+expected and harmless.
+
 ## Validation Checklist
 
 - Frontend build succeeds
-- Backend syntax check succeeds
+- Backend tests pass (`cd backend && npm test`)
+- Migrations apply to an empty database (`npx prisma migrate deploy`)
 - UI still renders with zinc theme and ShadCN components on:
   - login
   - public registration
